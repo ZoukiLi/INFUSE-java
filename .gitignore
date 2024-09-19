@@ -4,4 +4,3 @@ gradle
 build
 bin
 *.DS_Store
-src/test/resources/simpleTest/result.txt

@@ -22,7 +22,7 @@ data class AndFormula(val left: IFormula, val right: IFormula) : IFormula {
                     return left.repairF2T(assignment, patternMap, lk) and right.repairF2T(assignment, patternMap, lk)
             }
         }
-        TODO("Locked repair to be implemented")
+        TODO("Locked repair not implemented for AndFormula")
     }
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean) =

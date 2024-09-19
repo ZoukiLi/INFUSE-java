@@ -30,7 +30,6 @@ data class ForallFormula(val variable: Variable, val subFormula: IFormula, val p
                 when (subFormula.evaluate(bind(assignment, variable, newContext), patternMap)) {
                     true -> RepairSuite(AdditionRepairAction(newContext, pattern), weight) and
                             subFormula.repairT2F(bind(assignment, variable, newContext), patternMap, lk)
-
                     false -> RepairSuite(AdditionRepairAction(newContext, pattern), weight)
                 }
     }

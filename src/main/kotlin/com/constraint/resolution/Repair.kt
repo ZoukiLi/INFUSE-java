@@ -80,7 +80,7 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
         return actions.fold(patternMap) { acc, action -> action.execute(acc) }
     }
 
-    fun display(): String = actions.joinToString("\n") { it.display() } + "Weight: $weight\n"
+    fun display(): String = actions.joinToString("\n") { it.display() } + "\nWeight: $weight"
 
     infix fun and(other: RepairCase) = RepairCase(actions union other.actions, weight + other.weight)
 
@@ -102,11 +102,11 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
 }
 
 data class RepairSuite(val cases: Set<RepairCase>) {
-    fun display(): String = cases.joinToString("\n") { "Case:\n" + it.display() + "\n" }
+    fun display(): String = cases.mapIndexed { index, case -> "Case $index.\n${case.display()}" }.joinToString("\n----------\n")
     infix fun or(other: RepairSuite) = RepairSuite(cases union other.cases)
-    infix fun and(other: RepairSuite): RepairSuite = when ((cases intersect other.cases).isEmpty()) {
-        true -> RepairSuite(cases union other.cases)
-        false -> RepairSuite(cases.flatMap { case1 -> other.cases.map { case2 -> case1 and case2 } }.toSet())
+    infix fun and(other: RepairSuite): RepairSuite = when (cases.isEmpty() to other.cases.isEmpty()) {
+        false to false -> RepairSuite(cases.flatMap { case1 -> other.cases.map { case2 -> case1 and case2 } }.toSet())
+        else -> RepairSuite(cases union other.cases)
     }
     constructor(action: RepairAction, weight: Double) : this(setOf(RepairCase(action, weight)))
 }
