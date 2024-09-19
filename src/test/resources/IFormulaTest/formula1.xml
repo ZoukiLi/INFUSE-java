@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+
+<rules>
+    <rule>
+        <id>rule_forall_1</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B">
+                    <bfunc name="equal_x_y">
+                        <param pos="var1" var="a"/>
+                        <param pos="var2" var="b"/>
+                    </bfunc>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_forall_and</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B">
+                    <and>
+                        <bfunc name="equal_x_y">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                        <bfunc name="equal_x_x">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                    </and>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_forall_not</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B">
+                    <not>
+                        <bfunc name="equal_z_z">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                    </not>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_forall_exist_or</id>
+        <formula>
+            <forall var="a" in="A">
+                <exists var="b" in="B">
+                    <or>
+                        <bfunc name="equal_x_x">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                        <bfunc name="equal_x_y">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                    </or>
+                </exists>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_forall_implies_1</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B">
+                    <implies>
+                        <bfunc name="equal_x_x">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                        <bfunc name="equal_y_y">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                    </implies>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_forall_implies_2</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B">
+                    <implies>
+                        <bfunc name="equal_x_y">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                        <bfunc name="equal_y_z">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                    </implies>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_exists</id>
+        <formula>
+            <exists var="a" in="A">
+                <exists var="b" in="B">
+                    <and>
+                        <bfunc name="equal_x_x">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                        <bfunc name="equal_x_y">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                    </and>
+                </exists>
+            </exists>
+        </formula>
+    </rule>
+
+</rules>

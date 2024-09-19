@@ -3,7 +3,7 @@ package com.constraint.resolution.formulas
 import com.CC.Constraints.Formulas.FExists
 import com.constraint.resolution.*
 
-data class ExistFormula(val variable: Variable, val subFormula: IFormula, val pattern: String, val weight: Double) :
+data class ExistsFormula(val variable: Variable, val subFormula: IFormula, val pattern: String, val weight: Double) :
     IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap) =
         patternMap.getValue(pattern).any { subFormula.evaluate(bind(assignment, variable, it), patternMap) }
@@ -28,7 +28,7 @@ data class ExistFormula(val variable: Variable, val subFormula: IFormula, val pa
             }.reduce { acc, suite -> acc and suite }
 }
 
-fun fromCCFormulaExist(fml: FExists) = ExistFormula(
+fun fromCCFormulaExists(fml: FExists) = ExistsFormula(
     fml.`var`,
     fromCCFormula(fml.subformula),
     fml.pattern_id,

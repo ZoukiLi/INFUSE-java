@@ -1,10 +1,7 @@
 package com.constraint.resolution
 
 import com.CC.Constraints.Formulas.*
-import com.constraint.resolution.formulas.fromCCFormulaAnd
-import com.constraint.resolution.formulas.fromCCFormulaBfunc
-import com.constraint.resolution.formulas.fromCCFormulaForall
-import com.constraint.resolution.formulas.fromCCFormulaNot
+import com.constraint.resolution.formulas.*
 
 interface IFormula {
 
@@ -16,11 +13,11 @@ interface IFormula {
 fun fromCCFormula(fml: Formula) : IFormula = when(fml) {
         is FAnd -> fromCCFormulaAnd(fml)
         is FBfunc -> fromCCFormulaBfunc(fml)
-        is FExists -> TODO()
+        is FExists -> fromCCFormulaExists(fml)
         is FForall -> fromCCFormulaForall(fml)
-        is FImplies -> TODO()
+        is FImplies -> fromCCFormulaImplies(fml)
         is FNot -> fromCCFormulaNot(fml)
-        is FOr -> TODO()
+        is FOr -> fromCCFormulaOr(fml)
         else -> TODO("Unsupported formula type: ${fml.formula_type}")
     }
 
