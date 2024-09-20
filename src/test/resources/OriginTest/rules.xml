@@ -1,0 +1,562 @@
+<?xml version="1.0"?>
+
+<rules>
+    <rule>
+        <id>rule_still</id>
+        <formula>
+            <forall var = "v1" in = "latest">
+                <bfunction name="notStill">
+                    <param pos="1" var="v1"/>
+                </bfunction>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>0</group>
+            <priority>0</priority>
+        </resovler>
+    </rule>
+
+
+    <rule>
+        <id>rule_order1</id>
+        <formula>
+            <forall var = "v1" in = "orange_car1">
+                <not>
+                    <and>
+                        <exists var="v2" in="orange_car2">
+                            <bfunction name="earlier_than">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="orange_car3">
+                                <bfunction name="prev_location">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v3"/>
+                                </bfunction>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>1</group>
+            <priority>1</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_order2</id>
+        <formula>
+            <forall var = "v1" in = "green_car1">
+                <not>
+                    <and>
+                        <exists var="v2" in="green_car2">
+                            <bfunction name="earlier_than">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="green_car3">
+                                <bfunction name="prev_location">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v3"/>
+                                </bfunction>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>2</group>
+            <priority>1</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_order3</id>
+        <formula>
+            <forall var = "v1" in = "black_car1">
+                <not>
+                    <and>
+                        <exists var="v2" in="black_car2">
+                            <bfunction name="earlier_than">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="black_car3">
+                                <bfunction name="prev_location">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v3"/>
+                                </bfunction>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>3</group>
+            <priority>1</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_order4</id>
+        <formula>
+            <forall var = "v1" in = "white_car1">
+                <not>
+                    <and>
+                        <exists var="v2" in="white_car2">
+                            <bfunction name="earlier_than">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="white_car3">
+                                <bfunction name="prev_location">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v3"/>
+                                </bfunction>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>4</group>
+            <priority>1</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_order5</id>
+        <formula>
+            <forall var = "v1" in = "red_car1">
+                <not>
+                    <and>
+                        <exists var="v2" in="red_car2">
+                            <bfunction name="earlier_than">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="red_car3">
+                                <bfunction name="prev_location">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v3"/>
+                                </bfunction>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>5</group>
+            <priority>1</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_order6</id>
+        <formula>
+            <forall var = "v1" in = "silver_suv1">
+                <not>
+                    <and>
+                        <exists var="v2" in="silver_suv2">
+                            <bfunction name="earlier_than">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="silver_suv3">
+                                <bfunction name="prev_location">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v3"/>
+                                </bfunction>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>6</group>
+            <priority>1</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_order7</id>
+        <formula>
+            <forall var = "v1" in = "blue_car1">
+                <not>
+                    <and>
+                        <exists var="v2" in="blue_car2">
+                            <bfunction name="earlier_than">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="blue_car3">
+                                <bfunction name="prev_location">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v3"/>
+                                </bfunction>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>7</group>
+            <priority>1</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_order8</id>
+        <formula>
+            <forall var = "v1" in = "yellow_car1">
+                <not>
+                    <and>
+                        <exists var="v2" in="yellow_car2">
+                            <bfunction name="earlier_than">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="yellow_car3">
+                                <bfunction name="prev_location">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v3"/>
+                                </bfunction>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>8</group>
+            <priority>1</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_order9</id>
+        <formula>
+            <forall var = "v1" in = "pink_car1">
+                <not>
+                    <and>
+                        <exists var="v2" in="pink_car2">
+                            <bfunction name="earlier_than">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="pink_car3">
+                                <bfunction name="prev_location">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v3"/>
+                                </bfunction>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>9</group>
+            <priority>1</priority>
+        </resovler>
+    </rule>
+
+
+    <rule>
+        <id>rule_double1</id>
+        <formula>
+            <forall var = "v1" in = "orange_car4">
+                <not>
+                    <exists var="v2" in="orange_car5">
+                        <and>
+                            <not>
+                                <bfunction name = "sameLoc">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v2"/>
+                                </bfunction>
+                            </not>
+                            <bfunction name = "sameTime">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>1</group>
+            <priority>2</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_double2</id>
+        <formula>
+            <forall var = "v1" in = "green_car4">
+                <not>
+                    <exists var="v2" in="green_car5">
+                        <and>
+                            <not>
+                                <bfunction name = "sameLoc">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v2"/>
+                                </bfunction>
+                            </not>
+                            <bfunction name = "sameTime">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>2</group>
+            <priority>2</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_double3</id>
+        <formula>
+            <forall var = "v1" in = "black_car4">
+                <not>
+                    <exists var="v2" in="black_car5">
+                        <and>
+                            <not>
+                                <bfunction name = "sameLoc">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v2"/>
+                                </bfunction>
+                            </not>
+                            <bfunction name = "sameTime">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>3</group>
+            <priority>2</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_double4</id>
+        <formula>
+            <forall var = "v1" in = "white_car4">
+                <not>
+                    <exists var="v2" in="white_car5">
+                        <and>
+                            <not>
+                                <bfunction name = "sameLoc">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v2"/>
+                                </bfunction>
+                            </not>
+                            <bfunction name = "sameTime">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>4</group>
+            <priority>2</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_double5</id>
+        <formula>
+            <forall var = "v1" in = "red_car4">
+                <not>
+                    <exists var="v2" in="red_car5">
+                        <and>
+                            <not>
+                                <bfunction name = "sameLoc">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v2"/>
+                                </bfunction>
+                            </not>
+                            <bfunction name = "sameTime">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>5</group>
+            <priority>2</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_double6</id>
+        <formula>
+            <forall var = "v1" in = "silver_suv4">
+                <not>
+                    <exists var="v2" in="silver_suv5">
+                        <and>
+                            <not>
+                                <bfunction name = "sameLoc">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v2"/>
+                                </bfunction>
+                            </not>
+                            <bfunction name = "sameTime">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>6</group>
+            <priority>2</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_double7</id>
+        <formula>
+            <forall var = "v1" in = "blue_car4">
+                <not>
+                    <exists var="v2" in="blue_car5">
+                        <and>
+                            <not>
+                                <bfunction name = "sameLoc">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v2"/>
+                                </bfunction>
+                            </not>
+                            <bfunction name = "sameTime">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>7</group>
+            <priority>2</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_double8</id>
+        <formula>
+            <forall var = "v1" in = "yellow_car4">
+                <not>
+                    <exists var="v2" in="yellow_car5">
+                        <and>
+                            <not>
+                                <bfunction name = "sameLoc">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v2"/>
+                                </bfunction>
+                            </not>
+                            <bfunction name = "sameTime">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>8</group>
+            <priority>2</priority>
+        </resovler>
+    </rule>
+
+    <rule>
+        <id>rule_double9</id>
+        <formula>
+            <forall var = "v1" in = "pink_car4">
+                <not>
+                    <exists var="v2" in="pink_car5">
+                        <and>
+                            <not>
+                                <bfunction name = "sameLoc">
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v2"/>
+                                </bfunction>
+                            </not>
+                            <bfunction name = "sameTime">
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+        <resovler>
+            <strategy>drop-latest</strategy>
+            <group>9</group>
+            <priority>2</priority>
+        </resovler>
+    </rule>
+
+</rules>

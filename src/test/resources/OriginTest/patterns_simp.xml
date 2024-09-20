@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<patterns>
+    <pattern>
+        <id>car</id>
+        <dataSource>
+            <type>sensor</type>
+            <sourceList>
+                <source>context&lt;SENSOR&gt;</source>
+            </sourceList>
+        </dataSource>
+    </pattern>
+</patterns>

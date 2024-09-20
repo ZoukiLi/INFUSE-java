@@ -1,12 +1,12 @@
 > Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :compileKotlin UP-TO-DATE
+> Task :compileJava UP-TO-DATE
 > Task :processResources UP-TO-DATE
-> Task :processTestResources UP-TO-DATE
-> Task :compileKotlin
-> Task :compileJava
-> Task :classes
-> Task :jar
+> Task :classes UP-TO-DATE
+> Task :jar UP-TO-DATE
 > Task :compileTestKotlin UP-TO-DATE
-> Task :compileTestJava
+> Task :compileTestJava UP-TO-DATE
+> Task :processTestResources
 > Task :testClasses
 Rule: rule_forall_implies_1
 Truth value: true
@@ -70,6 +70,112 @@ Weight: 1.0
 Case 3.
 = (Context_2(3).y, Context_3(3).z)
 Weight: 1.0
+Rule: rule_forall_exists_1
+Truth value: false
+Repair suite:
+Case 0.
+- Context_1(3) -> A
+- Context_2(3) -> A
+Weight: 2.0
+----------
+Case 1.
+- Context_1(3) -> A
+= (Context_2(3).x, Context_3(3).x)
+= (Context_2(3).z, Context_3(3).z)
+Weight: 3.0
+----------
+Case 2.
+- Context_1(3) -> A
+= (Context_2(3).z, Context_4(3).z)
+Weight: 2.0
+----------
+Case 3.
+- Context_1(3) -> A
++ Context_10(0) -> B
+= (Context_2(3).x, Context_10(0).x)
+= (Context_2(3).z, Context_10(0).z)
+Weight: 4.0
+----------
+Case 4.
+= (Context_1(3).z, Context_3(3).z)
+- Context_2(3) -> A
+Weight: 2.0
+----------
+Case 5.
+= (Context_1(3).z, Context_3(3).z)
+= (Context_2(3).x, Context_3(3).x)
+= (Context_2(3).z, Context_3(3).z)
+Weight: 3.0
+----------
+Case 6.
+= (Context_1(3).z, Context_3(3).z)
+= (Context_2(3).z, Context_4(3).z)
+Weight: 2.0
+----------
+Case 7.
+= (Context_1(3).z, Context_3(3).z)
++ Context_10(0) -> B
+= (Context_2(3).x, Context_10(0).x)
+= (Context_2(3).z, Context_10(0).z)
+Weight: 4.0
+----------
+Case 8.
+= (Context_1(3).x, Context_4(3).x)
+= (Context_1(3).z, Context_4(3).z)
+- Context_2(3) -> A
+Weight: 3.0
+----------
+Case 9.
+= (Context_1(3).x, Context_4(3).x)
+= (Context_1(3).z, Context_4(3).z)
+= (Context_2(3).x, Context_3(3).x)
+= (Context_2(3).z, Context_3(3).z)
+Weight: 4.0
+----------
+Case 10.
+= (Context_1(3).x, Context_4(3).x)
+= (Context_1(3).z, Context_4(3).z)
+= (Context_2(3).z, Context_4(3).z)
+Weight: 3.0
+----------
+Case 11.
+= (Context_1(3).x, Context_4(3).x)
+= (Context_1(3).z, Context_4(3).z)
++ Context_10(0) -> B
+= (Context_2(3).x, Context_10(0).x)
+= (Context_2(3).z, Context_10(0).z)
+Weight: 5.0
+----------
+Case 12.
++ Context_9(0) -> B
+= (Context_1(3).x, Context_9(0).x)
+= (Context_1(3).z, Context_9(0).z)
+- Context_2(3) -> A
+Weight: 4.0
+----------
+Case 13.
++ Context_9(0) -> B
+= (Context_1(3).x, Context_9(0).x)
+= (Context_1(3).z, Context_9(0).z)
+= (Context_2(3).x, Context_3(3).x)
+= (Context_2(3).z, Context_3(3).z)
+Weight: 5.0
+----------
+Case 14.
++ Context_9(0) -> B
+= (Context_1(3).x, Context_9(0).x)
+= (Context_1(3).z, Context_9(0).z)
+= (Context_2(3).z, Context_4(3).z)
+Weight: 4.0
+----------
+Case 15.
++ Context_9(0) -> B
+= (Context_1(3).x, Context_9(0).x)
+= (Context_1(3).z, Context_9(0).z)
++ Context_10(0) -> B
+= (Context_2(3).x, Context_10(0).x)
+= (Context_2(3).z, Context_10(0).z)
+Weight: 6.0
 Rule: rule_forall_not
 Truth value: true
 Repair suite:
@@ -82,8 +188,8 @@ Case 1.
 Weight: 1.0
 ----------
 Case 2.
-+ Context_10(0) -> B
-= (Context_1(3).z, Context_10(0).z)
++ Context_12(0) -> B
+= (Context_1(3).z, Context_12(0).z)
 Weight: 2.0
 ----------
 Case 3.
@@ -95,24 +201,24 @@ Case 4.
 Weight: 1.0
 ----------
 Case 5.
-+ Context_11(0) -> B
-= (Context_2(3).z, Context_11(0).z)
++ Context_13(0) -> B
+= (Context_2(3).z, Context_13(0).z)
 Weight: 2.0
 ----------
 Case 6.
-+ Context_9(0) -> A
-= (Context_9(0).z, Context_3(3).z)
++ Context_11(0) -> A
+= (Context_11(0).z, Context_3(3).z)
 Weight: 2.0
 ----------
 Case 7.
-+ Context_9(0) -> A
-= (Context_9(0).z, Context_4(3).z)
++ Context_11(0) -> A
+= (Context_11(0).z, Context_4(3).z)
 Weight: 2.0
 ----------
 Case 8.
-+ Context_9(0) -> A
-+ Context_12(0) -> B
-= (Context_9(0).z, Context_12(0).z)
++ Context_11(0) -> A
++ Context_14(0) -> B
+= (Context_11(0).z, Context_14(0).z)
 Weight: 3.0
 Rule: rule_forall_exist_or
 Truth value: true
@@ -153,7 +259,7 @@ Case 6.
 Weight: 2.0
 ----------
 Case 7.
-+ Context_13(0) -> A
++ Context_15(0) -> A
 Weight: 1.0
 Rule: rule_forall_and
 Truth value: false
@@ -362,59 +468,57 @@ Case 8.
 = (Context_2(3).x, Context_4(3).y)
 Weight: 2.0
 Rule: rule_exists
-Truth value: true
+Truth value: false
 Repair suite:
 Case 0.
-- Context_1(3) -> A
-- Context_2(3) -> A
-Weight: 2.0
+= (Context_1(3).z, Context_3(3).z)
+Weight: 1.0
 ----------
 Case 1.
-- Context_1(3) -> A
-- Context_4(3) -> B
+= (Context_1(3).x, Context_4(3).x)
+= (Context_1(3).z, Context_4(3).z)
 Weight: 2.0
 ----------
 Case 2.
-- Context_1(3) -> A
-! (Context_2(3).x, Context_4(3).x)
-! (Context_2(3).y, Context_4(3).y)
++ Context_17(0) -> B
+= (Context_1(3).x, Context_17(0).x)
+= (Context_1(3).z, Context_17(0).z)
 Weight: 3.0
 ----------
 Case 3.
-- Context_3(3) -> B
-- Context_2(3) -> A
+= (Context_2(3).x, Context_3(3).x)
+= (Context_2(3).z, Context_3(3).z)
 Weight: 2.0
 ----------
 Case 4.
-- Context_3(3) -> B
-- Context_4(3) -> B
-Weight: 2.0
+= (Context_2(3).z, Context_4(3).z)
+Weight: 1.0
 ----------
 Case 5.
-- Context_3(3) -> B
-! (Context_2(3).x, Context_4(3).x)
-! (Context_2(3).y, Context_4(3).y)
++ Context_18(0) -> B
+= (Context_2(3).x, Context_18(0).x)
+= (Context_2(3).z, Context_18(0).z)
 Weight: 3.0
 ----------
 Case 6.
-! (Context_1(3).x, Context_3(3).x)
-! (Context_1(3).y, Context_3(3).y)
-- Context_2(3) -> A
++ Context_16(0) -> A
+= (Context_16(0).x, Context_3(3).x)
+= (Context_16(0).z, Context_3(3).z)
 Weight: 3.0
 ----------
 Case 7.
-! (Context_1(3).x, Context_3(3).x)
-! (Context_1(3).y, Context_3(3).y)
-- Context_4(3) -> B
++ Context_16(0) -> A
+= (Context_16(0).x, Context_4(3).x)
+= (Context_16(0).z, Context_4(3).z)
 Weight: 3.0
 ----------
 Case 8.
-! (Context_1(3).x, Context_3(3).x)
-! (Context_1(3).y, Context_3(3).y)
-! (Context_2(3).x, Context_4(3).x)
-! (Context_2(3).y, Context_4(3).y)
++ Context_16(0) -> A
++ Context_19(0) -> B
+= (Context_16(0).x, Context_19(0).x)
+= (Context_16(0).z, Context_19(0).z)
 Weight: 4.0
 > Task :test
-BUILD SUCCESSFUL in 3s
-8 actionable tasks: 5 executed, 3 up-to-date
-9:54:55 AM: Execution finished ':test --tests "com.resolution.IFormulaKtTest.load_formula"'.
+BUILD SUCCESSFUL in 1s
+8 actionable tasks: 2 executed, 6 up-to-date
+8:30:25 AM: Execution finished ':test --tests "com.resolution.IFormulaKtTest.load_formula"'.

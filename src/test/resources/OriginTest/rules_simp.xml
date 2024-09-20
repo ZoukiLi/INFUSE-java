@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!-- context数据域包括"car", "state", "prev_loc", "cur_loc", "next_loc", "timestamp" -->
+<rules>
+    <rule>
+        <id>rule_still</id>
+        <formula>
+            <forall var = "v1" in = "latest">
+                <bfunction name="notStill">
+                <!-- context数据中state域不等于0 -->
+                    <param pos="1" var="v1"/>
+                </bfunction>
+            </forall>
+        </formula>
+    </rule>
+
+    <rule>
+        <id>rule_double</id>
+        <formula>
+            <forall var = "v1" in = "car">
+                <not>
+                    <exists var="v2" in="car">
+                        <and>
+                            <not>
+                                <bfunction name = "sameLoc">
+                                    <!-- 两条context数据中cur_loc域相等 -->
+                                    <param pos="1" var="v1"/>
+                                    <param pos="2" var="v2"/>
+                                </bfunction>
+                            </not>
+                            <bfunction name = "sameTime">
+                                    <!-- 两条context数据中timestamp域相等 -->
+                                <param pos="1" var="v1"/>
+                                <param pos="2" var="v2"/>
+                            </bfunction>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+    </rule>
+
+</rules>

@@ -115,13 +115,32 @@
                             <param pos="var1" var="a"/>
                             <param pos="var2" var="b"/>
                         </bfunc>
-                        <bfunc name="equal_x_y">
+                        <bfunc name="equal_z_z">
                             <param pos="var1" var="a"/>
                             <param pos="var2" var="b"/>
                         </bfunc>
                     </and>
                 </exists>
             </exists>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_forall_exists_1</id>
+        <formula>
+            <forall var="a" in="A">
+                <exists var="b" in="B">
+                    <and>
+                        <bfunc name="equal_x_x">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                        <bfunc name="equal_z_z">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                    </and>
+                </exists>
+            </forall>
         </formula>
     </rule>
 
