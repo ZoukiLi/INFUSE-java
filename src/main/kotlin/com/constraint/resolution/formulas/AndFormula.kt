@@ -27,7 +27,7 @@ data class AndFormula(val left: IFormula, val right: IFormula) : IFormula {
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean) =
         // Repair both branched formulas when both are true
-        left.repairT2F(assignment, patternMap, lk) and right.repairT2F(assignment, patternMap, lk)
+        left.repairT2F(assignment, patternMap, lk) or right.repairT2F(assignment, patternMap, lk)
 }
 
 fun fromCCFormulaAnd(fml: FAnd) =

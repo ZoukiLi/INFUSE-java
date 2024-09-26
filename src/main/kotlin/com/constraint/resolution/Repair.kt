@@ -31,6 +31,15 @@ data class EqualizationRepairAction(
     override fun display(): String = "= ($context1.$attributeName1, $context2.$attributeName2)"
 }
 
+data class EqualizationConstRepairAction(
+    val context1: Context,
+    val attributeName1: String,
+    val value: String
+) : RepairAction {
+    override fun execute(patternMap: PatternMap): PatternMap = patternMap
+    override fun display(): String = "= ($context1.$attributeName1, $value)"
+}
+
 data class DifferentiationRepairAction(
     val context1: Context,
     val attributeName1: String,
@@ -39,6 +48,15 @@ data class DifferentiationRepairAction(
 ) : RepairAction {
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
     override fun display(): String = "! ($context1.$attributeName1, $context2.$attributeName2)"
+}
+
+data class DifferentiationConstRepairAction(
+    val context1: Context,
+    val attributeName1: String,
+    val value: String
+) : RepairAction {
+    override fun execute(patternMap: PatternMap): PatternMap = patternMap
+    override fun display(): String = "! ($context1.$attributeName1, $value)"
 }
 
 typealias Attribute = Pair<Context, String>

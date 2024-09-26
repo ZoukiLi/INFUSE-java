@@ -1,0 +1,4 @@
+name,car,state,prevLoc,curLoc,nextLoc,timestamp
+car1,Yellow Car1,0,Crossroad 0,Street 2,Crossroad 1,1670916920
+car2,Yellow Car2,1,Crossroad 0,Street 2,Crossroad 1,1670916920
+car3,Yellow Car3,1,Crossroad 0,Street 2,Crossroad 1,1670916920

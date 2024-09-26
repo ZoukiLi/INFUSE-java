@@ -1,8 +1,8 @@
 package com.resolution
 
 import com.CC.Constraints.Rules.RuleHandler
-import com.constraint.resolution.fromCCFormula
-import com.constraint.resolution.makeContext
+import com.constraint.resolution.*
+import java.io.File
 import kotlin.test.Test
 
 const val testDir = "src/test/resources/IFormulaTest/"
@@ -35,6 +35,54 @@ class IFormulaKtTest {
             println("Repair suite:")
             println(repairSuite.display())
         }
-
     }
+
+    @Test
+    fun test_car_simp() {
+        val testName = "car_simp"
+        val patternFiles = File("$testDir/$testName").listFiles { _, name -> name.startsWith("data") and name.endsWith(".csv") }
+        val patternMaps = patternFiles?.map { it.nameWithoutExtension to read_csv_pattern_map("car", it.path) }
+
+        val fmlFile = "$testDir/$testName/formula.xml"
+        val ruleHandler = RuleHandler()
+        ruleHandler.buildRules(fmlFile)
+
+        val resultDir = File("$testDir/$testName/results")
+        if (!resultDir.exists()) resultDir.mkdirs()
+
+        patternMaps?.forEach { pair ->
+            println("Pattern File: ${pair.first}")
+            val resultPath = "$testDir/$testName/results/${pair.first}.txt"
+            val resultFile = File(resultPath)
+            if (resultFile.exists()) resultFile.delete()
+            val patternMap = pair.second
+            ruleHandler.ruleMap.forEach {
+                val result = evaluate_and_display(it.key, fromCCFormula(it.value.formula), patternMap)
+                println(result)
+                resultFile.appendText(result)
+                resultFile.appendText("\n")
+            }
+        }
+    }
+}
+
+private fun evaluate_and_display(ruleName: String, formula: IFormula, patternMap: Map<String, Pattern>) : String {
+    val evalResult = formula.evaluate(mapOf(), patternMap)
+    var result = "Rule: $ruleName\n"
+    result += "Truth value: $evalResult\n"
+    if (evalResult) return result
+    val repairSuite = formula.repairF2T(mapOf(), patternMap)
+    result += "Repair suite:\n"
+    result += repairSuite.display()
+    return result
+}
+
+private fun read_csv_pattern_map(patternName: String, patternPath: String): Map<String, Pattern> {
+    val patternFile = File(patternPath)
+    val patternLines = patternFile.readLines()
+    val patternHeader = patternLines.first().split(",")
+    val patternData = patternLines.drop(1)
+    return mapOf(patternName to patternData.map {
+        makeContext(patternHeader.zip(it.split(",")).toMap())
+    }.toSet())
 }

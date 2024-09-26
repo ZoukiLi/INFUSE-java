@@ -1,0 +1,41 @@
+<rules>
+    <rule>
+        <id>rule_still</id>
+        <formula>
+            <forall var="v1" in="car">
+                <not>
+                    <bfunc name="equal_const_state_0">
+                        <!-- context数据中state域不等于0 -->
+                        <param pos="var1" var="v1"/>
+                    </bfunc>
+                </not>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_double</id>
+        <formula>
+            <forall var="v1" in="car">
+                <not>
+                    <exists var="v2" in="car">
+                        <and>
+                            <not>
+                                <bfunc name="equal_curLoc_curLoc">
+                                    <!-- 两条context数据中cur_loc域相等 -->
+                                    <param pos="var1" var="v1"/>
+                                    <param pos="var2" var="v2"/>
+                                </bfunc>
+                            </not>
+                            <bfunc name="equal_timestamp_timestamp">
+                                <!-- 两条context数据中timestamp域相等 -->
+                                <param pos="var1" var="v1"/>
+                                <param pos="var2" var="v2"/>
+                            </bfunc>
+                        </and>
+                    </exists>
+                </not>
+            </forall>
+        </formula>
+    </rule>
+
+</rules>
