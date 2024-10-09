@@ -16,7 +16,7 @@
         <id>rule_double</id>
         <formula>
             <forall var="v1" in="car">
-                <forall var="v2" in="car">
+                <forall var="v2" in="car" filter="greater" filterDep="v1">
                     <implies>
                         <bfunc name="equal_timestamp_timestamp">
                             <!-- 两条context数据中timestamp域相等 -->

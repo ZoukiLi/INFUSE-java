@@ -10,7 +10,7 @@ const val testDir = "src/test/resources/IFormulaTest/"
 class IFormulaKtTest {
     @Test
     fun load_formula() {
-        val fmlFile = "$testDir/formula1.xml"
+        val fmlFile = "$testDir/smoke/formula1.xml"
         val ruleHandler = RuleHandler()
         ruleHandler.buildRules(fmlFile)
         val patternA = setOf(
@@ -38,10 +38,18 @@ class IFormulaKtTest {
     }
 
     @Test
-    fun test_car_simp() {
-        val testName = "car_simp"
-        val patternFiles = File("$testDir/$testName").listFiles { _, name -> name.startsWith("data") and name.endsWith(".csv") }
-        val patternMaps = patternFiles?.map { it.nameWithoutExtension to read_csv_pattern_map("car", it.path) }
+    fun test_csv_dirs() {
+        mapOf(
+            "car_simp" to "car",
+            "car_simp_filter" to "car",
+            "filter_test" to "A",
+        ).forEach { test_csv_dir(it.key, it.value) }
+    }
+
+    private fun test_csv_dir(testName: String, patternName: String) {
+        val patternFiles =
+            File("$testDir/$testName").listFiles { _, name -> name.startsWith("data") and name.endsWith(".csv") }
+        val patternMaps = patternFiles?.map { it.nameWithoutExtension to read_csv_pattern_map(patternName, it.path) }
 
         val fmlFile = "$testDir/$testName/formula.xml"
         val ruleHandler = RuleHandler()

@@ -18,6 +18,8 @@ public class FExists extends Formula{
     private String var;
     private String pattern_id;
     private Formula subformula;
+    private String filter;
+    private String filterDep;
 
     //CPCC_NB
     private boolean canConcurrent;
@@ -2159,5 +2161,21 @@ public class FExists extends Formula{
 
         curNode.setLinks(result);
         return curNode.getLinks();
+    }
+
+    public String getFilter() {
+        return filter;
+    }
+
+    public void setFilter(String filter) {
+        this.filter = filter;
+    }
+
+    public String getFilterDep() {
+        return filterDep;
+    }
+
+    public void setFilterDep(String filterDep) {
+        this.filterDep = filterDep;
     }
 }

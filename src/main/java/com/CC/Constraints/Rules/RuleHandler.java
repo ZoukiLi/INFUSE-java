@@ -52,6 +52,9 @@ public class RuleHandler implements Loggable {
                 varPatternMap.put(eFormula.attributeValue("var"), eFormula.attributeValue("in"));
                 patToFormula.put(eFormula.attributeValue("in"), tmpForall);
                 patToRunTimeNode.put(eFormula.attributeValue("in"), new HashSet<>());
+                // Set filter if exists
+                tmpForall.setFilter(eFormula.attributeValue("filter"));
+                tmpForall.setFilterDep(eFormula.attributeValue("filterDep"));
                 retFormula = tmpForall;
                 break;
             }
@@ -62,6 +65,8 @@ public class RuleHandler implements Loggable {
                 varPatternMap.put(eFormula.attributeValue("var"), eFormula.attributeValue("in"));
                 patToFormula.put(eFormula.attributeValue("in"), tmpExists);
                 patToRunTimeNode.put(eFormula.attributeValue("in"), new HashSet<>());
+                tmpExists.setFilter(eFormula.attributeValue("filter"));
+                tmpExists.setFilterDep(eFormula.attributeValue("filterDep"));
                 retFormula = tmpExists;
                 break;
             }

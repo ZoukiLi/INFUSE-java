@@ -127,4 +127,5 @@ data class RepairSuite(val cases: Set<RepairCase>) {
         else -> RepairSuite(cases union other.cases)
     }
     constructor(action: RepairAction, weight: Double) : this(setOf(RepairCase(action, weight)))
+    constructor() : this(emptySet())
 }

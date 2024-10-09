@@ -1,0 +1,51 @@
+<rules>
+    <rule>
+        <id>rule_forall</id>
+        <formula>
+            <forall var="x" in="A">
+                <forall var="y" in="A" filter="greater" filterDep="x">
+                    <forall var="z" in="A" filter="greater" filterDep="y">
+                        <and>
+                            <bfunc name="equal_const_val_1">
+                                <param pos="var1" var="x"/>
+                            </bfunc>
+                            <and>
+                                <bfunc name="equal_const_val_2">
+                                    <param pos="var1" var="y"/>
+                                </bfunc>
+                                <bfunc name="equal_const_val_3">
+                                    <param pos="var1" var="z"/>
+                                </bfunc>
+                            </and>
+                        </and>
+                    </forall>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+<!--    <rule>-->
+<!--        <id>rule_exists</id>-->
+<!--        <formula>-->
+<!--            <exists var="x" in="A">-->
+<!--                <exists var="y" in="A" filter="greater" filterDep="x">-->
+<!--                    <exists var="z" in="A" filter="greater" filterDep="y">-->
+<!--                        <and>-->
+<!--                            <bfunc name="equal_const_val_1">-->
+<!--                                <param pos="var1" var="x"/>-->
+<!--                            </bfunc>-->
+<!--                            <and>-->
+<!--                                <bfunc name="equal_const_val_2">-->
+<!--                                    <param pos="var1" var="y"/>-->
+<!--                                </bfunc>-->
+<!--                                <bfunc name="equal_const_val_3">-->
+<!--                                    <param pos="var1" var="z"/>-->
+<!--                                </bfunc>-->
+<!--                            </and>-->
+<!--                        </and>-->
+<!--                    </exists>-->
+<!--                </exists>-->
+<!--            </exists>-->
+<!--        </formula>-->
+<!--    </rule>-->
+
+</rules>

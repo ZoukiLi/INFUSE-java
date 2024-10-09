@@ -8,7 +8,7 @@ data class Context(
     val id: Int,
     val attributes: Map<String, ContextAttribute>
 ) {
-    override fun toString() = "Context_${id}(${attributes["name"]?.first ?: "unknown"})"
+    override fun toString() = attributes["name"]?.first ?: "unknown($id)"
 }
 
 typealias Variable = String
