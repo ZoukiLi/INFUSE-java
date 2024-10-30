@@ -1,6 +1,7 @@
 package com.constraint.resolution.formulas
 
 import com.CC.Constraints.Formulas.FOr
+import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
 data class OrFormula(val left: IFormula, val right: IFormula) : IFormula {
@@ -23,6 +24,34 @@ data class OrFormula(val left: IFormula, val right: IFormula) : IFormula {
         }
         TODO("Locked repair not implemented for OrFormula")
     }
+
+    override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
+        RCTNode(this, assignment, patternMap, ccRtNode)
+
+    override fun createBranches(rctNode: RCTNode) = listOf(
+        left.createRCTNode(rctNode.assignment, rctNode.patternMap, rctNode.ccRtNode?.children?.get(0)),
+        right.createRCTNode(rctNode.assignment, rctNode.patternMap, rctNode.ccRtNode?.children?.get(1))
+    )
+
+    override fun evalRCTNode(rctNode: RCTNode) = rctNode.children.any { it.getTruth() }
+
+    override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) =
+        rctNode.children[0].repairF2T(lk) or rctNode.children[1].repairF2T(lk)
+
+    override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean): RepairSuite {
+        if (!lk) {
+            val leftNode = rctNode.children[0]
+            val rightNode = rctNode.children[1]
+            return when (Pair(leftNode.getTruth(), rightNode.getTruth())) {
+                Pair(true, true) -> leftNode.repairT2F(lk) and rightNode.repairT2F(lk)
+                Pair(false, true) -> rightNode.repairT2F(lk)
+                Pair(true, false) -> leftNode.repairT2F(lk)
+                else -> RepairSuite(setOf())
+            }
+        }
+        TODO("Not yet implemented")
+    }
+
 }
 
 fun fromCCFormulaOr(fml: FOr) =

@@ -1,6 +1,7 @@
 package com.constraint.resolution.formulas
 
 import com.CC.Constraints.Formulas.FForall
+import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
 data class ForallFormula(
@@ -22,7 +23,8 @@ data class ForallFormula(
     override fun repairF2T(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
         val filteredMap =
             patternMap + (pattern to patternMap[pattern]!!.filterBy(filter, filterDep?.let { assignment[it] }))
-        return filteredMap.getValue(pattern).filter { !subFormula.evaluate(bind(assignment, variable, it), filteredMap) }
+        return filteredMap.getValue(pattern)
+            .filter { !subFormula.evaluate(bind(assignment, variable, it), filteredMap) }
             // For each context in the pattern that does not satisfy the sub formula,
             .map {
                 // Remove this context from the pattern
@@ -50,6 +52,41 @@ data class ForallFormula(
                     false -> RepairSuite(AdditionRepairAction(newContext, pattern), weight)
                 }
     }
+
+    override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
+        RCTNode(this, assignment, patternMap, ccRtNode)
+
+    override fun createBranches(rctNode: RCTNode) =
+        quantifierCreateRCTBranches(rctNode, subFormula, variable, pattern, filter, filterDep)
+
+    override fun evalRCTNode(rctNode: RCTNode) = rctNode.children.all { it.getTruth() }
+
+    override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) =
+        rctNode.children.filter { !it.getTruth() }.map {
+            // For each child that is false, repair the sub formula
+            // Or remove the context from the pattern
+            it.repairF2T(lk) or RepairSuite(
+                RemovalRepairAction(it.assignment.getValue(variable), pattern), weight
+            )
+        }.fold(RepairSuite()) { acc, suite -> acc and suite }
+
+    override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) =
+        rctNode.children.map {
+            // Repair the sub formula for each child
+            it.repairT2F(lk)
+        }.fold(RepairSuite()) { acc, suite -> acc or suite } or
+                // Add the default context to the pattern
+                repairByDefaultContext(rctNode, lk)
+
+    private fun repairByDefaultContext(rctNode: RCTNode, lk: Boolean): RepairSuite {
+        val newContext = makeContext(mapOf())
+        val addRepair = RepairSuite(AdditionRepairAction(newContext, pattern), weight)
+        val addNode = subFormula.createRCTNode(bind(rctNode.assignment, variable, newContext), rctNode.patternMap)
+        return when (addNode.getTruth()) {
+            true -> addRepair and addNode.repairT2F(lk)
+            false -> addRepair
+        }
+    }
 }
 
 fun fromCCFormulaForall(fml: FForall) = ForallFormula(
@@ -60,3 +97,23 @@ fun fromCCFormulaForall(fml: FForall) = ForallFormula(
     fml.filter,
     fml.filterDep
 )
+
+fun quantifierCreateRCTBranches(
+    rctNode: RCTNode,
+    subFormula: IFormula,
+    variable: Variable,
+    pattern: String,
+    filter: String?,
+    filterDep: String?
+) =
+    rctNode.ccRtNode?.children?.map {
+        subFormula.createRCTNode(
+            bind(rctNode.assignment, variable, fromCCContext(it.varEnv.getValue(variable))),
+            rctNode.patternMap,
+            it
+        )
+    } ?: rctNode.patternMap.getValue(pattern).filterBy(filter, filterDep?.let { rctNode.assignment[it] })
+        .map { bind(rctNode.assignment, variable, it) }
+        .map {
+            subFormula.createRCTNode(it, rctNode.patternMap)
+        }

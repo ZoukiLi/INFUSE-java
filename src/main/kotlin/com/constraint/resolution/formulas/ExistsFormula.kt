@@ -1,6 +1,7 @@
 package com.constraint.resolution.formulas
 
 import com.CC.Constraints.Formulas.FExists
+import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
 data class ExistsFormula(
@@ -40,6 +41,38 @@ data class ExistsFormula(
                 RepairSuite(RemovalRepairAction(it, pattern), weight) or
                         subFormula.repairT2F(bind(assignment, variable, it), filteredMap, lk)
             }.fold(RepairSuite()) { acc, suite -> acc and suite }
+    }
+
+    override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
+        RCTNode(this, assignment, patternMap, ccRtNode)
+
+    override fun createBranches(rctNode: RCTNode) =
+        quantifierCreateRCTBranches(rctNode, subFormula, variable, pattern, filter, filterDep)
+
+    override fun evalRCTNode(rctNode: RCTNode) = rctNode.children.any { it.getTruth() }
+
+    override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) =
+        rctNode.children.map {
+            // Repair the sub formula for that context
+            it.repairF2T(lk)
+        }.fold(RepairSuite()) { acc, suite -> acc or suite } or
+                repairByDefaultContext(rctNode, lk)
+
+    override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) =
+        rctNode.children.filter { it.getTruth() }.map {
+            it.repairT2F(lk) or RepairSuite(
+                RemovalRepairAction(it.assignment.getValue(variable), pattern), weight
+            )
+        }.fold(RepairSuite()) { acc, suite -> acc and suite }
+
+    private fun repairByDefaultContext(rctNode: RCTNode, lk: Boolean): RepairSuite {
+        val newContext = makeContext(mapOf())
+        val addRepair = RepairSuite(AdditionRepairAction(newContext, pattern), weight)
+        val addNode = subFormula.createRCTNode(bind(rctNode.assignment, variable, newContext), rctNode.patternMap)
+        return when (addNode.getTruth()) {
+            true -> addRepair
+            false -> addRepair and addNode.repairF2T(lk)
+        }
     }
 }
 

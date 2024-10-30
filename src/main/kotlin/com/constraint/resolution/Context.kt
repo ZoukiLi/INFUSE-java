@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 typealias ContextAttribute = Pair<String, Boolean>
 
 data class Context(
-    val id: Int,
+    val id: String,
     val attributes: Map<String, ContextAttribute>
 ) {
     override fun toString() = attributes["name"]?.first ?: "unknown($id)"
@@ -28,7 +28,10 @@ object IdCounter {
 }
 
 fun makeContext(attributes: Map<String, String>) =
-    Context(IdCounter.next(), attributes.mapValues { (_, v) -> v to true })
+    Context(IdCounter.next().toString(), attributes.mapValues { (_, v) -> v to true })
+
+fun fromCCContext(ccContext: com.CC.Contexts.Context) =
+    Context(ccContext.ctx_id, ccContext.ctx_fields.mapValues { (_, v) -> v to true })
 
 fun makeContextPool(contexts: List<Context>) = contexts.associateBy { it.id }
 

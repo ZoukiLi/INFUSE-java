@@ -1,6 +1,7 @@
 package com.constraint.resolution.formulas
 
 import com.CC.Constraints.Formulas.FAnd
+import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
 data class AndFormula(val left: IFormula, val right: IFormula) : IFormula {
@@ -28,6 +29,36 @@ data class AndFormula(val left: IFormula, val right: IFormula) : IFormula {
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean) =
         // Repair both branched formulas when both are true
         left.repairT2F(assignment, patternMap, lk) or right.repairT2F(assignment, patternMap, lk)
+
+    override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
+        RCTNode(this, assignment, patternMap, ccRtNode)
+
+    override fun createBranches(rctNode: RCTNode) = listOf(
+        left.createRCTNode(rctNode.assignment, rctNode.patternMap, rctNode.ccRtNode?.children?.get(0)),
+        right.createRCTNode(rctNode.assignment, rctNode.patternMap, rctNode.ccRtNode?.children?.get(1))
+    )
+
+    override fun evalRCTNode(rctNode: RCTNode) = rctNode.children.all { it.getTruth() }
+
+    override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean): RepairSuite {
+        if (!lk) {
+            val leftNode = rctNode.children[0]
+            val rightNode = rctNode.children[1]
+            return when (Pair(leftNode.getTruth(), rightNode.getTruth())) {
+                // Repair the branched formula that is false
+                Pair(false, true) -> leftNode.repairF2T(lk)
+                Pair(true, false) -> rightNode.repairF2T(lk)
+                // Repair both branched formulas when both are false
+                Pair(false, false) -> leftNode.repairF2T(lk) and rightNode.repairF2T(lk)
+                // Both true, nothing to do
+                else -> RepairSuite(setOf())
+            }
+        }
+        TODO("Not yet implemented")
+    }
+
+    override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) =
+        rctNode.children[0].repairT2F(lk) or rctNode.children[1].repairT2F(lk)
 }
 
 fun fromCCFormulaAnd(fml: FAnd) =

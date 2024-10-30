@@ -1,6 +1,7 @@
 package com.constraint.resolution.formulas
 
 import com.CC.Constraints.Formulas.FBfunc
+import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
 data class EqualFormula(
@@ -31,6 +32,35 @@ data class EqualFormula(
             assignment.getValue(var2), attr2,
         ), weight
     )
+
+    override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
+        RCTNode(this, assignment, patternMap, ccRtNode)
+
+    override fun createBranches(rctNode: RCTNode) = listOf<RCTNode>()
+    override fun evalRCTNode(rctNode: RCTNode): Boolean {
+        val value1 = rctNode.assignment[var1]?.attributes?.get(attr1) ?: return false
+        val value2 = rctNode.assignment[var2]?.attributes?.get(attr2) ?: return false
+        if (!value1.second || !value2.second) {
+            return false
+        }
+        return value1.first == value2.first
+    }
+
+    override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) = RepairSuite(
+        // One repair case: equalize the values of the two attributes
+        EqualizationRepairAction(
+            rctNode.assignment.getValue(var1), attr1,
+            rctNode.assignment.getValue(var2), attr2,
+        ), weight
+    )
+
+    override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) = RepairSuite(
+        // One repair case: differentiate the values of the two attributes
+        DifferentiationRepairAction(
+            rctNode.assignment.getValue(var1), attr1,
+            rctNode.assignment.getValue(var2), attr2,
+        ), weight
+    )
 }
 
 data class EqualConstFormula(val var1: Variable, val attr1: String, val value: String, val weight: Double = 1.0) : IFormula {
@@ -53,6 +83,34 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
         // One repair case: differentiate the constant value with the value of the attribute
         DifferentiationConstRepairAction(
             assignment.getValue(var1), attr1,
+            value,
+        ), weight
+    )
+
+    override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
+        RCTNode(this, assignment, patternMap, ccRtNode)
+
+    override fun createBranches(rctNode: RCTNode) = listOf<RCTNode>()
+    override fun evalRCTNode(rctNode: RCTNode): Boolean {
+        val value1 = rctNode.assignment[var1]?.attributes?.get(attr1) ?: return false
+        if (!value1.second) {
+            return false
+        }
+        return value1.first == value
+    }
+
+    override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) = RepairSuite(
+        // One repair case: equalize the constant value with the value of the attribute
+        EqualizationConstRepairAction(
+            rctNode.assignment.getValue(var1), attr1,
+            value,
+        ), weight
+    )
+
+    override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) = RepairSuite(
+        // One repair case: differentiate the constant value with the value of the attribute
+        DifferentiationConstRepairAction(
+            rctNode.assignment.getValue(var1), attr1,
             value,
         ), weight
     )

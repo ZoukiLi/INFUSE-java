@@ -9,10 +9,12 @@ const val testDir = "src/test/resources/IFormulaTest/"
 
 class IFormulaKtTest {
     @Test
-    fun load_formula() {
-        val fmlFile = "$testDir/smoke/formula1.xml"
+    fun smoke_test() {
+        val fmlPath = "$testDir/smoke/formula1.xml"
+        val resultPath = "$testDir/smoke/results.txt"
+        val resultFile = File(resultPath)
         val ruleHandler = RuleHandler()
-        ruleHandler.buildRules(fmlFile)
+        ruleHandler.buildRules(fmlPath)
         val patternA = setOf(
             makeContext(mapOf("x" to "1", "y" to "2", "z" to "1")),
             makeContext(mapOf("x" to "2", "y" to "1", "z" to "1"))
@@ -25,15 +27,21 @@ class IFormulaKtTest {
         ruleHandler.ruleMap.forEach {
             println("Rule: ${it.key}")
             val formula = fromCCFormula(it.value.formula)
-            val evalResult = formula.evaluate(mapOf(), patternMap)
+            val node = formula.createRCTNode(mapOf(), patternMap)
+            val evalResult = node.getTruth()
+            assert(evalResult == formula.evaluate(mapOf(), patternMap))
             println("Truth value: $evalResult")
             val repairSuite =
                 when (evalResult) {
-                    true -> formula.repairT2F(mapOf(), patternMap)
-                    false -> formula.repairF2T(mapOf(), patternMap)
+                    true -> node.repairT2F()
+                    false -> node.repairF2T()
                 }
-            println("Repair suite:")
-            println(repairSuite.display())
+
+            resultFile.appendText("Rule: ${it.key}\n")
+            resultFile.appendText("Truth value: $evalResult\n")
+            resultFile.appendText("Repair suite:\n")
+            resultFile.appendText(repairSuite.display())
+            resultFile.appendText("\n")
         }
     }
 
@@ -75,11 +83,12 @@ class IFormulaKtTest {
 }
 
 private fun evaluate_and_display(ruleName: String, formula: IFormula, patternMap: Map<String, Pattern>) : String {
-    val evalResult = formula.evaluate(mapOf(), patternMap)
+    val node = formula.createRCTNode(mapOf(), patternMap)
+    val evalResult = node.getTruth()
     var result = "Rule: $ruleName\n"
     result += "Truth value: $evalResult\n"
     if (evalResult) return result
-    val repairSuite = formula.repairF2T(mapOf(), patternMap)
+    val repairSuite = node.repairF2T()
     result += "Repair suite:\n"
     result += repairSuite.display()
     return result
