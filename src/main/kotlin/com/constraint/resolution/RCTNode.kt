@@ -18,6 +18,8 @@ class RCTNode(
     // Optional truth value of the node
     private var isTruth: Boolean? = null
 
+    private var branchesCreated = false
+
     // Get the truth value of the node
     fun getTruth(): Boolean {
         if (isTruth != null) {
@@ -27,12 +29,28 @@ class RCTNode(
             isTruth = ccRtNode.isTruth
             return isTruth!!
         }
-        children = formula.createBranches(this)
+        // No available truth value
         // Eval based on children
+        if (!branchesCreated) {
+            createBranches()
+        }
         isTruth = formula.evalRCTNode(this)
         return isTruth!!
     }
 
-    fun repairF2T(lk: Boolean = false) = formula.repairNodeF2T(this, lk)
-    fun repairT2F(lk: Boolean = false) = formula.repairNodeT2F(this, lk)
+    fun repairF2T(lk: Boolean = false): RepairSuite {
+        createBranches()
+        return formula.repairNodeF2T(this, lk)
+    }
+    fun repairT2F(lk: Boolean = false): RepairSuite {
+        createBranches()
+        return formula.repairNodeT2F(this, lk)
+    }
+    fun createBranches() {
+        if (branchesCreated) {
+            return
+        }
+        children = formula.createBranches(this)
+        branchesCreated = true
+    }
 }

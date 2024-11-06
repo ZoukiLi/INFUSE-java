@@ -33,6 +33,27 @@ fun makeContext(attributes: Map<String, String>) =
 fun fromCCContext(ccContext: com.CC.Contexts.Context) =
     Context(ccContext.ctx_id, ccContext.ctx_fields.mapValues { (_, v) -> v to true })
 
+fun toCCContext(context: Context): com.CC.Contexts.Context {
+    val ccContext = com.CC.Contexts.Context()
+    ccContext.ctx_id = context.id
+    context.attributes.forEach { (k, v) -> ccContext.ctx_fields[k] = v.first }
+    return ccContext
+}
+
+fun toContextChanges(patternMap: PatternMap): List<com.CC.Contexts.ContextChange> {
+    val changes = mutableListOf<com.CC.Contexts.ContextChange>()
+    patternMap.forEach { (name, pattern) ->
+        pattern.forEach { context ->
+            val change = com.CC.Contexts.ContextChange()
+            change.change_type = com.CC.Contexts.ContextChange.Change_Type.ADDITION
+            change.context = toCCContext(context)
+            change.pattern_id = name
+            changes.add(change)
+        }
+    }
+    return changes
+}
+
 fun makeContextPool(contexts: List<Context>) = contexts.associateBy { it.id }
 
 fun makeContextSetMap(pool: ContextPool, nameId: Map<String, Set<Int>>) =

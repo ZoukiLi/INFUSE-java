@@ -10,7 +10,7 @@ data class AdditionRepairAction(val context: Context, val patternName: String) :
         return patternMap.mapValues { (name, pat) -> if (name == patternName) pat + context else pat }
     }
 
-    override fun display(): String = "+ $context -> $patternName"
+    override fun display(): String = "<+, $patternName, $context>"
 }
 
 data class RemovalRepairAction(val context: Context, val patternName: String) : RepairAction {
@@ -18,7 +18,7 @@ data class RemovalRepairAction(val context: Context, val patternName: String) : 
         return patternMap.mapValues { (name, pat) -> if (name == patternName) pat - context else pat }
     }
 
-    override fun display(): String = "- $context -> $patternName"
+    override fun display(): String = "<-, $patternName, $context>"
 }
 
 data class EqualizationRepairAction(
@@ -28,7 +28,7 @@ data class EqualizationRepairAction(
     val attributeName2: String
 ) : RepairAction {
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
-    override fun display(): String = "= ($context1.$attributeName1, $context2.$attributeName2)"
+    override fun display(): String = "<=, $context1.$attributeName1, $context2.$attributeName2>"
 }
 
 data class EqualizationConstRepairAction(
@@ -37,7 +37,7 @@ data class EqualizationConstRepairAction(
     val value: String
 ) : RepairAction {
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
-    override fun display(): String = "= ($context1.$attributeName1, $value)"
+    override fun display(): String = "<=, $context1.$attributeName1, $value>"
 }
 
 data class DifferentiationRepairAction(
@@ -47,7 +47,7 @@ data class DifferentiationRepairAction(
     val attributeName2: String
 ) : RepairAction {
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
-    override fun display(): String = "! ($context1.$attributeName1, $context2.$attributeName2)"
+    override fun display(): String = "<!=, $context1.$attributeName1, $context2.$attributeName2>"
 }
 
 data class DifferentiationConstRepairAction(
@@ -56,7 +56,7 @@ data class DifferentiationConstRepairAction(
     val value: String
 ) : RepairAction {
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
-    override fun display(): String = "! ($context1.$attributeName1, $value)"
+    override fun display(): String = "<!=, $context1.$attributeName1, $value>"
 }
 
 typealias Attribute = Pair<Context, String>

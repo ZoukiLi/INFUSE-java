@@ -13,6 +13,7 @@ class IFormulaKtTest {
         val fmlPath = "$testDir/smoke/formula1.xml"
         val resultPath = "$testDir/smoke/results.txt"
         val resultFile = File(resultPath)
+        if (resultFile.exists()) resultFile.delete()
         val ruleHandler = RuleHandler()
         ruleHandler.buildRules(fmlPath)
         val patternA = setOf(

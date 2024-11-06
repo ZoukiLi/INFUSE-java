@@ -341,7 +341,7 @@ public class FBfunc extends Formula {
             for(String attriName : context.getCtx_fields().keySet()){
                 ctxInfos.put(attriName, context.getCtx_fields().get(attriName));
             }
-            vcMap.put(params.get(pos), ctxInfos);
+            vcMap.put(pos, ctxInfos);
         }
 
         boolean result = false;
