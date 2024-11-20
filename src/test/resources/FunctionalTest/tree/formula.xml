@@ -1,0 +1,47 @@
+<rules>
+    <rule>
+        <id>rule1</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B">
+                    <and>
+                        <not>
+                            <bfunc name="equal_const_x_0">
+                                <!--a.x != 0-->
+                                <param pos="var1" var="a"/>
+                            </bfunc>
+                        </not>
+                        <bfunc name="equal_const_y_1">
+                            <!--b.y == 1-->
+                            <param pos="var1" var="b"/>
+                        </bfunc>
+                    </and>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+
+<!--    <rule>-->
+<!--        <id>rule2</id>-->
+<!--        &lt;!&ndash; This rule is same as rule1, but written in a different way &ndash;&gt;-->
+<!--        <formula>-->
+<!--            <and>-->
+<!--                <forall var="a" in="A">-->
+<!--                    <not>-->
+<!--                        <bfunc name="equal_const_x_0">-->
+<!--                            &lt;!&ndash;a.x != 0&ndash;&gt;-->
+<!--                            <param pos="var1" var="a"/>-->
+<!--                        </bfunc>-->
+<!--                    </not>-->
+<!--                </forall>-->
+<!--                <forall var="b" in="B">-->
+<!--                    <bfunc name="equal_const_y_1">-->
+<!--                        &lt;!&ndash;b.y == 1&ndash;&gt;-->
+<!--                        <param pos="var1" var="b"/>-->
+<!--                    </bfunc>-->
+<!--                </forall>-->
+<!--            </and>-->
+<!--        </formula>-->
+<!--    </rule>-->
+
+</rules>

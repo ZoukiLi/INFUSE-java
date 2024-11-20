@@ -1,0 +1,26 @@
+<rules>
+    <rule>
+        <id>rule1</id>
+        <formula>
+            <or>
+                <forall var="a" in="A">
+                    <not>
+                        <bfunc name="equal_const_x_0">
+                            <!--a.x != 0-->
+                            <param pos="var1" var="a"/>
+                        </bfunc>
+                    </not>
+                </forall>
+                <not>
+                    <exists var="b" in="B">
+                        <bfunc name="equal_const_y_1">
+                            <!--b.y == 1-->
+                            <param pos="var1" var="b"/>
+                        </bfunc>
+                    </exists>
+                </not>
+            </or>
+        </formula>
+    </rule>
+
+</rules>

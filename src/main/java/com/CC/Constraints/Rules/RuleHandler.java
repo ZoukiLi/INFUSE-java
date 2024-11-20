@@ -106,7 +106,13 @@ public class RuleHandler implements Loggable {
                 // bfunc has several params
                 List<Element> paramElementList = eFormula.elements();
                 for(Element paramElement : paramElementList){
-                    tmpBfunc.addParam(paramElement.attributeValue("pos"), paramElement.attributeValue("var"));
+                    // pos and var
+                    var pos = paramElement.attributeValue("pos");
+                    // if pos is a number, add a prefix "v" to it
+                    if(pos.matches("\\d+")){
+                        pos = "v" + pos;
+                    }
+                    tmpBfunc.addParam(pos, paramElement.attributeValue("var"));
                 }
                 retFormula = tmpBfunc;
                 break;

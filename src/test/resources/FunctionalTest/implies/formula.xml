@@ -1,0 +1,22 @@
+<rules>
+    <rule>
+        <id>rule1</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B">
+                    <implies>
+                        <bfunc name="equal_z_z">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                        <bfunc name="equal_y_y">
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                    </implies>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+
+</rules>

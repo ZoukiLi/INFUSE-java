@@ -1,0 +1,37 @@
+<rules>
+    <rule>
+        <id>rule1</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B">
+                    <and>
+                        <bfunc name="equal_const_x_0">
+                            <param pos="var1" var="a"/>
+                        </bfunc>
+                        <bfunc name="equal_const_x_0">
+                            <param pos="var1" var="b"/>
+                        </bfunc>
+                    </and>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule2</id>
+        <formula>
+            <and>
+                <forall var="a" in="A">
+                    <bfunc name="equal_const_x_0">
+                        <param pos="var1" var="a"/>
+                    </bfunc>
+                </forall>
+                <forall var="b" in="B">
+                    <bfunc name="equal_const_x_0">
+                        <param pos="var1" var="b"/>
+                    </bfunc>
+                </forall>
+            </and>
+        </formula>
+    </rule>
+
+</rules>

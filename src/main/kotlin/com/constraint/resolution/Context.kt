@@ -1,12 +1,14 @@
 package com.constraint.resolution
 
+import com.CC.Contexts.ContextChange
 import java.util.concurrent.atomic.AtomicInteger
 
 typealias ContextAttribute = Pair<String, Boolean>
 
 data class Context(
     val id: String,
-    val attributes: Map<String, ContextAttribute>
+    val attributes: Map<String, ContextAttribute>,
+    var ccContext: com.CC.Contexts.Context? = null
 ) {
     override fun toString() = attributes["name"]?.first ?: "unknown($id)"
 }
@@ -17,7 +19,9 @@ typealias Assignment = Map<Variable, Context>
 fun bind(assignment: Assignment, variable: Variable, context: Context) = assignment + (variable to context)
 
 typealias Pattern = Set<Context>
+typealias MutablePattern = MutableSet<Context>
 typealias PatternMap = Map<String, Pattern>
+typealias MutablePatternMap = Map<String, MutablePattern>
 typealias ContextPool = Map<Int, Context>
 
 // ID counter for generating new context ids
@@ -31,12 +35,16 @@ fun makeContext(attributes: Map<String, String>) =
     Context(IdCounter.next().toString(), attributes.mapValues { (_, v) -> v to true })
 
 fun fromCCContext(ccContext: com.CC.Contexts.Context) =
-    Context(ccContext.ctx_id, ccContext.ctx_fields.mapValues { (_, v) -> v to true })
+    Context(ccContext.ctx_id, ccContext.ctx_fields.mapValues { (_, v) -> v to true }, ccContext)
 
 fun toCCContext(context: Context): com.CC.Contexts.Context {
+    if (context.ccContext != null) {
+        return context.ccContext!!
+    }
     val ccContext = com.CC.Contexts.Context()
     ccContext.ctx_id = context.id
     context.attributes.forEach { (k, v) -> ccContext.ctx_fields[k] = v.first }
+    context.ccContext = ccContext
     return ccContext
 }
 
@@ -44,14 +52,22 @@ fun toContextChanges(patternMap: PatternMap): List<com.CC.Contexts.ContextChange
     val changes = mutableListOf<com.CC.Contexts.ContextChange>()
     patternMap.forEach { (name, pattern) ->
         pattern.forEach { context ->
-            val change = com.CC.Contexts.ContextChange()
-            change.change_type = com.CC.Contexts.ContextChange.Change_Type.ADDITION
+            val change = ContextChange()
+            change.change_type = ContextChange.Change_Type.ADDITION
             change.context = toCCContext(context)
             change.pattern_id = name
             changes.add(change)
         }
     }
     return changes
+}
+
+fun applyContextChange(mutablePatternMap: MutablePatternMap, change: ContextChange) {
+    when (change.change_type) {
+        ContextChange.Change_Type.ADDITION -> mutablePatternMap[change.pattern_id]?.add(fromCCContext(change.context))
+        ContextChange.Change_Type.DELETION -> mutablePatternMap[change.pattern_id]?.removeIf(change.context.ctx_id::equals)
+        ContextChange.Change_Type.UPDATE -> TODO()
+    }
 }
 
 fun makeContextPool(contexts: List<Context>) = contexts.associateBy { it.id }

@@ -5,9 +5,10 @@ import com.constraint.resolution.*
 import java.io.File
 import kotlin.test.Test
 
-const val testDir = "src/test/resources/IFormulaTest/"
 
 class IFormulaKtTest {
+    val testDir = "src/test/resources/IFormulaTest/"
+
     @Test
     fun smoke_test() {
         val fmlPath = "$testDir/smoke/formula1.xml"
@@ -83,7 +84,7 @@ class IFormulaKtTest {
     }
 }
 
-private fun evaluate_and_display(ruleName: String, formula: IFormula, patternMap: Map<String, Pattern>) : String {
+private fun evaluate_and_display(ruleName: String, formula: IFormula, patternMap: Map<String, Pattern>): String {
     val node = formula.createRCTNode(mapOf(), patternMap)
     val evalResult = node.getTruth()
     var result = "Rule: $ruleName\n"

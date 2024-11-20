@@ -1,0 +1,44 @@
+<rules>
+    <rule>
+        <id>rule1</id>
+        <formula>
+            <and>
+                <forall var="a" in="A">
+                    <not>
+                        <bfunc name="equal_const_x_0">
+                            <!--a.x != 0-->
+                            <param pos="var1" var="a"/>
+                        </bfunc>
+                    </not>
+                </forall>
+                <exists var="b" in="B">
+                    <bfunc name="equal_const_y_1">
+                        <!--b.y == 1-->
+                        <param pos="var1" var="b"/>
+                    </bfunc>
+                </exists>
+            </and>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule2</id>
+        <formula>
+            <and>
+                <forall var="a" in="A">
+                    <not>
+                        <bfunc name="equal_const_y_0">
+                            <!--a.y != 0-->
+                            <param pos="var1" var="a"/>
+                        </bfunc>
+                    </not>
+                </forall>
+                <exists var="b" in="B">
+                    <bfunc name="equal_const_z_1">
+                        <!--b.z == 1-->
+                        <param pos="var1" var="b"/>
+                    </bfunc>
+                </exists>
+            </and>
+        </formula>
+    </rule>
+</rules>
