@@ -63,7 +63,7 @@ class CCRuntimeNode {
             resultFile.appendText("Rule: ${it.key}\n")
 
             val cctNode = it.value.cctRoot
-            val formula = fromCCFormula(it.value.formula)
+            val formula = fromCCFormula(it.value.formula, null)
             val node = formula.createRCTNode(mapOf(), patternMap, cctNode)
             val evalResult = node.getTruth()
             assert(evalResult == cctNode.isTruth)

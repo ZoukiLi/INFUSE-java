@@ -16,14 +16,14 @@ interface IFormula {
     fun repairNodeT2F(rctNode: RCTNode, lk: Boolean = false): RepairSuite
 }
 
-fun fromCCFormula(fml: Formula) : IFormula = when(fml) {
-        is FAnd -> fromCCFormulaAnd(fml)
+fun fromCCFormula(fml: Formula, manager: ContextManager?) : IFormula = when(fml) {
+        is FAnd -> fromCCFormulaAnd(fml, manager)
         is FBfunc -> fromCCFormulaBfunc(fml)
-        is FExists -> fromCCFormulaExists(fml)
-        is FForall -> fromCCFormulaForall(fml)
-        is FImplies -> fromCCFormulaImplies(fml)
-        is FNot -> fromCCFormulaNot(fml)
-        is FOr -> fromCCFormulaOr(fml)
+        is FExists -> fromCCFormulaExists(fml, manager)
+        is FForall -> fromCCFormulaForall(fml, manager)
+        is FImplies -> fromCCFormulaImplies(fml, manager)
+        is FNot -> fromCCFormulaNot(fml, manager)
+        is FOr -> fromCCFormulaOr(fml, manager)
         else -> TODO("Unsupported formula type: ${fml.formula_type}")
     }
 

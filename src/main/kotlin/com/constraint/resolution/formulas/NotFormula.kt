@@ -4,20 +4,18 @@ import com.CC.Constraints.Formulas.FNot
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
-data class NotFormula(val subFormula: IFormula) : IFormula {
+data class NotFormula(
+    val subFormula: IFormula, val manager: ContextManager?, val immutablePattern: List<String>? = null
+) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap) = !subFormula.evaluate(assignment, patternMap)
 
     override fun repairF2T(
-        assignment: Assignment,
-        patternMap: PatternMap,
-        lk: Boolean
-    ) = subFormula.repairT2F(assignment, patternMap, lk)
+        assignment: Assignment, patternMap: PatternMap, lk: Boolean
+    ) = subFormula.repairT2F(assignment, patternMap, lk).filterImmutable(immutablePattern, manager)
 
     override fun repairT2F(
-        assignment: Assignment,
-        patternMap: PatternMap,
-        lk: Boolean
-    ) = subFormula.repairF2T(assignment, patternMap, lk)
+        assignment: Assignment, patternMap: PatternMap, lk: Boolean
+    ) = subFormula.repairF2T(assignment, patternMap, lk).filterImmutable(immutablePattern, manager)
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
         RCTNode(this, assignment, patternMap, ccRtNode)
@@ -27,9 +25,12 @@ data class NotFormula(val subFormula: IFormula) : IFormula {
 
     override fun evalRCTNode(rctNode: RCTNode) = !rctNode.children.first().getTruth()
 
-    override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) = rctNode.children.first().repairT2F(lk)
+    override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) =
+        rctNode.children.first().repairT2F(lk).filterImmutable(immutablePattern, manager)
 
-    override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) = rctNode.children.first().repairF2T(lk)
+    override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) =
+        rctNode.children.first().repairF2T(lk).filterImmutable(immutablePattern, manager)
 }
 
-fun fromCCFormulaNot(fml: FNot) = NotFormula(fromCCFormula(fml.subformula))
+fun fromCCFormulaNot(fml: FNot, manager: ContextManager?) =
+    NotFormula(fromCCFormula(fml.subformula, manager), manager, fml.immutablePattern)

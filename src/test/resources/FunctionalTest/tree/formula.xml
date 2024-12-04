@@ -3,7 +3,7 @@
         <id>rule1</id>
         <formula>
             <forall var="a" in="A">
-                <forall var="b" in="B">
+                <forall var="b" in="B" immutable="B">
                     <and>
                         <not>
                             <bfunc name="equal_const_x_0">

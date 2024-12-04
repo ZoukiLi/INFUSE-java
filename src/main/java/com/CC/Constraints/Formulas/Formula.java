@@ -7,6 +7,7 @@ import com.CC.Contexts.ContextChange;
 import com.CC.Middleware.Checkers.Checker;
 import com.CC.Middleware.Schedulers.Scheduler;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,6 +16,7 @@ public abstract class Formula {
 
     private Formula_Type formula_type;
     private boolean Affected;
+    private List<String> immutablePattern;
 
     public Formula_Type getFormula_type() {
         return formula_type;
@@ -22,12 +24,18 @@ public abstract class Formula {
     public boolean isAffected() {
         return Affected;
     }
+    public List<String> getImmutablePattern() {
+        return immutablePattern;
+    }
 
     public void setAffected(boolean affected) {
         Affected = affected;
     }
     public void setFormula_type(Formula_Type formula_type) {
         this.formula_type = formula_type;
+    }
+    public void setImmutablePattern(List<String> immutablePattern) {
+        this.immutablePattern = immutablePattern;
     }
 
     //为syntax tree输出

@@ -4,23 +4,30 @@ import com.CC.Constraints.Formulas.FOr
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
-data class OrFormula(val left: IFormula, val right: IFormula) : IFormula {
+data class OrFormula(
+    val left: IFormula, val right: IFormula, val manager: ContextManager?, val immutablePattern: List<String>? = null
+) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap) =
         left.evaluate(assignment, patternMap) or right.evaluate(assignment, patternMap)
 
     override fun repairF2T(assignment: Assignment, patternMap: PatternMap, lk: Boolean) =
-        left.repairF2T(assignment, patternMap, lk) or right.repairF2T(assignment, patternMap, lk)
+        (left.repairF2T(assignment, patternMap, lk) or right.repairF2T(assignment, patternMap, lk)).filterImmutable(
+            immutablePattern, manager
+        )
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
         if (!lk) {
             val leftTruth = left.evaluate(assignment, patternMap)
             val rightTruth = right.evaluate(assignment, patternMap)
             return when (leftTruth to rightTruth) {
-                true to true -> left.repairT2F(assignment, patternMap, lk) and right.repairT2F(assignment, patternMap, lk)
+                true to true -> left.repairT2F(assignment, patternMap, lk) and right.repairT2F(
+                    assignment, patternMap, lk
+                )
+
                 false to true -> right.repairT2F(assignment, patternMap, lk)
                 true to false -> left.repairT2F(assignment, patternMap, lk)
                 else -> RepairSuite(setOf())
-            }
+            }.filterImmutable(immutablePattern, manager)
         }
         TODO("Locked repair not implemented for OrFormula")
     }
@@ -37,6 +44,7 @@ data class OrFormula(val left: IFormula, val right: IFormula) : IFormula {
 
     override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) =
         rctNode.children[0].repairF2T(lk) or rctNode.children[1].repairF2T(lk)
+            .filterImmutable(immutablePattern, manager)
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean): RepairSuite {
         if (!lk) {
@@ -47,12 +55,16 @@ data class OrFormula(val left: IFormula, val right: IFormula) : IFormula {
                 Pair(false, true) -> rightNode.repairT2F(lk)
                 Pair(true, false) -> leftNode.repairT2F(lk)
                 else -> RepairSuite(setOf())
-            }
+            }.filterImmutable(immutablePattern, manager)
         }
         TODO("Not yet implemented")
     }
 
 }
 
-fun fromCCFormulaOr(fml: FOr) =
-    OrFormula(fromCCFormula(fml.subformulas.first()), fromCCFormula(fml.subformulas.last()))
+fun fromCCFormulaOr(fml: FOr, manager: ContextManager?) = OrFormula(
+    fromCCFormula(fml.subformulas.first(), manager),
+    fromCCFormula(fml.subformulas.last(), manager),
+    manager,
+    fml.immutablePattern
+)

@@ -28,7 +28,7 @@ class IFormulaKtTest {
         val patternMap = mapOf("A" to patternA, "B" to patternB)
         ruleHandler.ruleMap.forEach {
             println("Rule: ${it.key}")
-            val formula = fromCCFormula(it.value.formula)
+            val formula = fromCCFormula(it.value.formula, null)
             val node = formula.createRCTNode(mapOf(), patternMap)
             val evalResult = node.getTruth()
             assert(evalResult == formula.evaluate(mapOf(), patternMap))
@@ -75,7 +75,7 @@ class IFormulaKtTest {
             if (resultFile.exists()) resultFile.delete()
             val patternMap = pair.second
             ruleHandler.ruleMap.forEach {
-                val result = evaluate_and_display(it.key, fromCCFormula(it.value.formula), patternMap)
+                val result = evaluate_and_display(it.key, fromCCFormula(it.value.formula, null), patternMap)
                 println(result)
                 resultFile.appendText(result)
                 resultFile.appendText("\n")

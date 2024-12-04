@@ -55,6 +55,11 @@ public class RuleHandler implements Loggable {
                 // Set filter if exists
                 tmpForall.setFilter(eFormula.attributeValue("filter"));
                 tmpForall.setFilterDep(eFormula.attributeValue("filterDep"));
+                // Add immutable pattern if exists
+                if (eFormula.attributeValue("immutable") != null){
+                    var immutablePattern = eFormula.attributeValue("immutable").split(",");
+                    tmpForall.setImmutablePattern(Arrays.asList(immutablePattern));
+                }
                 retFormula = tmpForall;
                 break;
             }
@@ -67,6 +72,11 @@ public class RuleHandler implements Loggable {
                 patToRunTimeNode.put(eFormula.attributeValue("in"), new HashSet<>());
                 tmpExists.setFilter(eFormula.attributeValue("filter"));
                 tmpExists.setFilterDep(eFormula.attributeValue("filterDep"));
+                // Add immutable pattern if exists
+                if (eFormula.attributeValue("immutable") != null) {
+                    var immutablePattern = eFormula.attributeValue("immutable").split(",");
+                    tmpExists.setImmutablePattern(Arrays.asList(immutablePattern));
+                }
                 retFormula = tmpExists;
                 break;
             }
@@ -75,6 +85,11 @@ public class RuleHandler implements Loggable {
                 // and has two kids
                 tmpAnd.replaceSubformula(0, resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 tmpAnd.replaceSubformula(1, resolveFormula(eFormula.elements().get(1), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
+                // Add immutable pattern if exists
+                if (eFormula.attributeValue("immutable") != null) {
+                    var immutablePattern = eFormula.attributeValue("immutable").split(",");
+                    tmpAnd.setImmutablePattern(Arrays.asList(immutablePattern));
+                }
                 retFormula = tmpAnd;
                 break;
             }

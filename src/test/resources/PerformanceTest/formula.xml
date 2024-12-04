@@ -1,6 +1,50 @@
 <rules>
     <rule>
-        <id>rule1</id>
+        <id>rule_single</id>
+        <formula>
+            <forall var="a" in="A">
+                <bfunc name="equal_const_x_0">
+                    <param pos="var1" var="a"/>
+                </bfunc>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_jux</id>
+        <formula>
+            <and>
+                <forall var="a" in="A">
+                    <bfunc name="equal_const_x_0">
+                        <param pos="var1" var="a"/>
+                    </bfunc>
+                </forall>
+                <forall var="b" in="B">
+                    <bfunc name="equal_const_x_0">
+                        <param pos="var1" var="b"/>
+                    </bfunc>
+                </forall>
+            </and>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_jux_im</id>
+        <formula>
+            <and>
+                <forall var="a" in="A">
+                    <bfunc name="equal_const_x_0">
+                        <param pos="var1" var="a"/>
+                    </bfunc>
+                </forall>
+                <forall var="b" in="B" immutable="B">
+                    <bfunc name="equal_const_x_0">
+                        <param pos="var1" var="b"/>
+                    </bfunc>
+                </forall>
+            </and>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_nested</id>
         <formula>
             <forall var="a" in="A">
                 <forall var="b" in="B">
@@ -17,20 +61,20 @@
         </formula>
     </rule>
     <rule>
-        <id>rule2</id>
+        <id>rule_nested_im</id>
         <formula>
-            <and>
-                <forall var="a" in="A">
-                    <bfunc name="equal_const_x_0">
-                        <param pos="var1" var="a"/>
-                    </bfunc>
+            <forall var="a" in="A">
+                <forall var="b" in="B" immutable="B">
+                    <and immutable="B">
+                        <bfunc name="equal_const_x_0">
+                            <param pos="var1" var="a"/>
+                        </bfunc>
+                        <bfunc name="equal_const_x_0">
+                            <param pos="var1" var="b"/>
+                        </bfunc>
+                    </and>
                 </forall>
-                <forall var="b" in="B">
-                    <bfunc name="equal_const_x_0">
-                        <param pos="var1" var="b"/>
-                    </bfunc>
-                </forall>
-            </and>
+            </forall>
         </formula>
     </rule>
 

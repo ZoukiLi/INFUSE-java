@@ -5,6 +5,8 @@ import com.CC.Contexts.ContextChange
 interface RepairAction {
     fun execute(patternMap: PatternMap): PatternMap
     fun display(): String
+    fun applyTo(manager: ContextManager): List<ContextChange>
+    fun affectedBy(pattern: String, manager: ContextManager): Boolean
 }
 
 data class AdditionRepairAction(val context: Context, val patternName: String) : RepairAction {
@@ -13,6 +15,10 @@ data class AdditionRepairAction(val context: Context, val patternName: String) :
     }
 
     override fun display(): String = "<+, $patternName, $context>"
+
+    override fun applyTo(manager: ContextManager) = manager.addContextToPattern(context, listOf(patternName))
+
+    override fun affectedBy(pattern: String, manager: ContextManager) = pattern == patternName
 }
 
 data class RemovalRepairAction(val context: Context, val patternName: String) : RepairAction {
@@ -21,6 +27,10 @@ data class RemovalRepairAction(val context: Context, val patternName: String) : 
     }
 
     override fun display(): String = "<-, $patternName, $context>"
+
+    override fun applyTo(manager: ContextManager) = manager.deleteContextFromPattern(context, patternName)
+
+    override fun affectedBy(pattern: String, manager: ContextManager) = pattern == patternName
 }
 
 data class EqualizationRepairAction(
@@ -31,6 +41,10 @@ data class EqualizationRepairAction(
 ) : RepairAction {
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
     override fun display(): String = "<=, $context1.$attributeName1, $context2.$attributeName2>"
+    override fun applyTo(manager: ContextManager) =
+        manager.updateContextAttribute(context1, attributeName1, context2.attributes[attributeName2]?.first)
+
+    override fun affectedBy(pattern: String, manager: ContextManager) = manager.patternsOf(context1).contains(pattern)
 }
 
 data class EqualizationConstRepairAction(
@@ -40,6 +54,10 @@ data class EqualizationConstRepairAction(
 ) : RepairAction {
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
     override fun display(): String = "<=, $context1.$attributeName1, $value>"
+    override fun applyTo(manager: ContextManager) =
+        manager.updateContextAttribute(context1, attributeName1, value)
+
+    override fun affectedBy(pattern: String, manager: ContextManager) = manager.patternsOf(context1).contains(pattern)
 }
 
 data class DifferentiationRepairAction(
@@ -50,6 +68,10 @@ data class DifferentiationRepairAction(
 ) : RepairAction {
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
     override fun display(): String = "<!=, $context1.$attributeName1, $context2.$attributeName2>"
+    override fun applyTo(manager: ContextManager) =
+        manager.updateContextAttribute(context1, attributeName1, null)
+
+    override fun affectedBy(pattern: String, manager: ContextManager) = manager.patternsOf(context1).contains(pattern)
 }
 
 data class DifferentiationConstRepairAction(
@@ -59,6 +81,10 @@ data class DifferentiationConstRepairAction(
 ) : RepairAction {
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
     override fun display(): String = "<!=, $context1.$attributeName1, $value>"
+    override fun applyTo(manager: ContextManager) =
+        manager.updateContextAttribute(context1, attributeName1, null)
+
+    override fun affectedBy(pattern: String, manager: ContextManager) = manager.patternsOf(context1).contains(pattern)
 }
 
 typealias Attribute = Pair<Context, String>
@@ -118,6 +144,8 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
             .any { (x, y) -> disjointSet.find(x) == disjointSet.find(y) }
     }
 
+    fun applyTo(manager: ContextManager) = actions.flatMap { it.applyTo(manager) }
+
     constructor(action: RepairAction, weight: Double) : this(setOf(action), weight)
 }
 
@@ -125,46 +153,28 @@ data class RepairSuite(val cases: Set<RepairCase>) {
     fun display(): String =
         cases.mapIndexed { index, case -> "Case $index.\n${case.display()}" }.joinToString("\n----------\n")
 
+    fun filterImmutable(immutablePattern: List<String>?, manager: ContextManager?): RepairSuite {
+        if (immutablePattern == null || manager == null) {
+            return this
+        }
+        return RepairSuite(
+            cases
+                .filterNot {
+                    it.actions.any {
+                        immutablePattern.any { pattern -> it.affectedBy(pattern, manager) }
+                    }
+                }
+                .toSet())
+    }
+
     infix fun or(other: RepairSuite) = RepairSuite(cases union other.cases)
-    infix fun and(other: RepairSuite): RepairSuite = when (cases.isEmpty() to other.cases.isEmpty()) {
+    infix fun and(other: RepairSuite) = when (cases.isEmpty() to other.cases.isEmpty()) {
         false to false -> RepairSuite(cases.flatMap { case1 -> other.cases.map { case2 -> case1 and case2 } }.toSet())
         else -> RepairSuite(cases union other.cases)
     }
 
+    fun firstCase(): RepairCase? = cases.minByOrNull { it.actions.size }
+
     constructor(action: RepairAction, weight: Double) : this(setOf(RepairCase(action, weight)))
     constructor() : this(emptySet())
-}
-
-fun RepairSuite.firstCase(): RepairCase? =
-    cases.filter { it.actions.all { it is AdditionRepairAction || it is RemovalRepairAction } }
-        .minByOrNull { it.actions.size }
-
-fun RepairCase.toChanges(): List<ContextChange> {
-    return actions.filterIsInstance<AdditionRepairAction>().map { contextChangeAddition(it.context, it.patternName) } +
-            actions.filterIsInstance<RemovalRepairAction>().map { contextChangeRemoval(it.context, it.patternName) }
-}
-
-fun contextChangeAddition(context: Context, pattern: String): ContextChange {
-    val change = ContextChange()
-    change.change_type = ContextChange.Change_Type.ADDITION
-    change.context = toCCContext(context)
-    change.pattern_id = pattern
-    return change
-}
-
-fun contextChangeRemoval(context: Context, pattern: String): ContextChange {
-    val change = ContextChange()
-    change.change_type = ContextChange.Change_Type.DELETION
-    change.context = toCCContext(context)
-    change.pattern_id = pattern
-    return change
-}
-
-fun MutablePatternMap.applyRepairSuite(repairSuite: RepairSuite) {
-    repairSuite.firstCase()?.actions?.forEach {
-        when (it) {
-            is AdditionRepairAction -> this[it.patternName]?.add(it.context)
-            is RemovalRepairAction -> this[it.patternName]?.remove(it.context)
-        }
-    }
 }

@@ -8,6 +8,14 @@ public class ContextChange {
     private String pattern_id;
     private Context context;
 
+    public ContextChange() {
+    }
+
+    public ContextChange(Change_Type change_type, String pattern_id, Context context) {
+        this.change_type = change_type;
+        this.pattern_id = pattern_id;
+        this.context = context;
+    }
 
     //setter and getter
     public void setChange_type(Change_Type change_type) {

@@ -4,12 +4,12 @@ import com.CC.Constraints.Formulas.FImplies
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
-data class ImpliesFormula(val left: IFormula, val right: IFormula) : IFormula {
+data class ImpliesFormula(val left: IFormula, val right: IFormula, val manager: ContextManager?, val immutablePattern: List<String>? = null) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap) =
         !left.evaluate(assignment, patternMap) or right.evaluate(assignment, patternMap)
 
     override fun repairF2T(assignment: Assignment, patternMap: PatternMap, lk: Boolean) =
-        left.repairT2F(assignment, patternMap, lk) or right.repairF2T(assignment, patternMap, lk)
+        (left.repairT2F(assignment, patternMap, lk) or right.repairF2T(assignment, patternMap, lk)).filterImmutable(immutablePattern, manager)
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
         if (!lk) {
@@ -53,5 +53,5 @@ data class ImpliesFormula(val left: IFormula, val right: IFormula) : IFormula {
     }
 }
 
-fun fromCCFormulaImplies(fml: FImplies) =
-    ImpliesFormula(fromCCFormula(fml.subformulas.first()), fromCCFormula(fml.subformulas.last()))
+fun fromCCFormulaImplies(fml: FImplies, manager: ContextManager?) =
+    ImpliesFormula(fromCCFormula(fml.subformulas.first(), manager), fromCCFormula(fml.subformulas.last(), manager), manager, fml.immutablePattern)
