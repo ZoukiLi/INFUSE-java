@@ -3,9 +3,12 @@ package com.CC.Constraints.Rules;
 import com.CC.Constraints.Formulas.*;
 import com.CC.Constraints.Runtime.RuntimeNode;
 import com.CC.Util.Loggable;
+import com.constraint.resolution.RepairDisableConfigItem;
+import com.constraint.resolution.RepairType;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -41,6 +44,42 @@ public class RuleHandler implements Loggable {
         }
     }
 
+    @Nullable
+    private List<RepairDisableConfigItem> getDisableConfigItems(Element element){
+        List<RepairDisableConfigItem> retList = new ArrayList<>();
+        if (element.attributeValue("non-updatable") != null) {
+            var nonUpdatable = element.attributeValue("non-updatable").split(",");
+            for(var item : nonUpdatable){
+                retList.add(new RepairDisableConfigItem(RepairType.UPDATE, item));
+            }
+        }
+        if (element.attributeValue("non-addable") != null) {
+            var nonAddable = element.attributeValue("non-addable").split(",");
+            for(var item : nonAddable){
+                retList.add(new RepairDisableConfigItem(RepairType.ADDITION, item));
+            }
+        }
+        if (element.attributeValue("non-removable") != null) {
+            var nonRemovable = element.attributeValue("non-removable").split(",");
+            for(var item : nonRemovable){
+                retList.add(new RepairDisableConfigItem(RepairType.REMOVAL, item));
+            }
+        }
+        if (element.attributeValue("immutable") != null) {
+            var immutable = element.attributeValue("immutable").split(",");
+            for(var item : immutable){
+                retList.add(new RepairDisableConfigItem(RepairType.UPDATE, item));
+                retList.add(new RepairDisableConfigItem(RepairType.ADDITION, item));
+                retList.add(new RepairDisableConfigItem(RepairType.REMOVAL, item));
+            }
+        }
+
+        if (retList.isEmpty()){
+            return null;
+        }
+        return retList;
+    }
+
     private Formula resolveFormula(Element eFormula, Map<String, String> varPatternMap, Map<String, Formula> patToFormula,
                                    Map<String, Set<RuntimeNode>> patToRunTimeNode, int depth){
         Formula retFormula = null;
@@ -56,10 +95,7 @@ public class RuleHandler implements Loggable {
                 tmpForall.setFilter(eFormula.attributeValue("filter"));
                 tmpForall.setFilterDep(eFormula.attributeValue("filterDep"));
                 // Add immutable pattern if exists
-                if (eFormula.attributeValue("immutable") != null){
-                    var immutablePattern = eFormula.attributeValue("immutable").split(",");
-                    tmpForall.setImmutablePattern(Arrays.asList(immutablePattern));
-                }
+                tmpForall.setDisableConfigItems(getDisableConfigItems(eFormula));
                 retFormula = tmpForall;
                 break;
             }
@@ -73,10 +109,7 @@ public class RuleHandler implements Loggable {
                 tmpExists.setFilter(eFormula.attributeValue("filter"));
                 tmpExists.setFilterDep(eFormula.attributeValue("filterDep"));
                 // Add immutable pattern if exists
-                if (eFormula.attributeValue("immutable") != null) {
-                    var immutablePattern = eFormula.attributeValue("immutable").split(",");
-                    tmpExists.setImmutablePattern(Arrays.asList(immutablePattern));
-                }
+                tmpExists.setDisableConfigItems(getDisableConfigItems(eFormula));
                 retFormula = tmpExists;
                 break;
             }
@@ -86,10 +119,7 @@ public class RuleHandler implements Loggable {
                 tmpAnd.replaceSubformula(0, resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 tmpAnd.replaceSubformula(1, resolveFormula(eFormula.elements().get(1), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 // Add immutable pattern if exists
-                if (eFormula.attributeValue("immutable") != null) {
-                    var immutablePattern = eFormula.attributeValue("immutable").split(",");
-                    tmpAnd.setImmutablePattern(Arrays.asList(immutablePattern));
-                }
+                tmpAnd.setDisableConfigItems(getDisableConfigItems(eFormula));
                 retFormula = tmpAnd;
                 break;
             }
@@ -98,6 +128,8 @@ public class RuleHandler implements Loggable {
                 // or has two kids
                 tmpOr.replaceSubformula(0, resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 tmpOr.replaceSubformula(1, resolveFormula(eFormula.elements().get(1), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
+                // Add immutable pattern if exists
+                tmpOr.setDisableConfigItems(getDisableConfigItems(eFormula));
                 retFormula = tmpOr;
                 break;
             }
@@ -106,6 +138,8 @@ public class RuleHandler implements Loggable {
                 // implies has two kids
                 tmpImplies.replaceSubformula(0, resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 tmpImplies.replaceSubformula(1, resolveFormula(eFormula.elements().get(1), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
+                // Add immutable pattern if exists
+                tmpImplies.setDisableConfigItems(getDisableConfigItems(eFormula));
                 retFormula = tmpImplies;
                 break;
             }
@@ -113,6 +147,8 @@ public class RuleHandler implements Loggable {
                 FNot tmpNot = new FNot();
                 // not has only one kid
                 tmpNot.setSubformula(resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
+                // Add immutable pattern if exists
+                tmpNot.setDisableConfigItems(getDisableConfigItems(eFormula));
                 retFormula = tmpNot;
                 break;
             }
@@ -129,6 +165,8 @@ public class RuleHandler implements Loggable {
                     }
                     tmpBfunc.addParam(pos, paramElement.attributeValue("var"));
                 }
+                // Add immutable pattern if exists
+                tmpBfunc.setDisableConfigItems(getDisableConfigItems(eFormula));
                 retFormula = tmpBfunc;
                 break;
             }

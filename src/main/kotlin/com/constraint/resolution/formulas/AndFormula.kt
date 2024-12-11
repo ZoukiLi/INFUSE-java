@@ -5,7 +5,7 @@ import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
 data class AndFormula(
-    val left: IFormula, val right: IFormula, val manager: ContextManager?, val immutablePattern: List<String>? = null
+    val left: IFormula, val right: IFormula, val manager: ContextManager?, val userConfig: List<RepairDisableConfigItem>? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap) =
         left.evaluate(assignment, patternMap) and right.evaluate(assignment, patternMap)
@@ -27,7 +27,7 @@ data class AndFormula(
 
                 else -> RepairSuite()
             }
-            return result.filterImmutable(immutablePattern, manager)
+            return result.filterImmutable(userConfig, manager)
         }
         TODO("Locked repair not implemented for AndFormula")
     }
@@ -35,7 +35,7 @@ data class AndFormula(
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean) =
         // Repair both branched formulas when both are true
         (left.repairT2F(assignment, patternMap, lk) or right.repairT2F(assignment, patternMap, lk)).filterImmutable(
-                immutablePattern,
+                userConfig,
                 manager
             )
 
@@ -62,19 +62,19 @@ data class AndFormula(
                 // Both true, nothing to do
                 else -> RepairSuite(setOf())
             }
-            return result.filterImmutable(immutablePattern, manager)
+            return result.filterImmutable(userConfig, manager)
         }
         TODO("Not yet implemented")
     }
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) =
         rctNode.children[0].repairT2F(lk) or rctNode.children[1].repairT2F(lk)
-            .filterImmutable(immutablePattern, manager)
+            .filterImmutable(userConfig, manager)
 }
 
 fun fromCCFormulaAnd(fml: FAnd, manager: ContextManager?) = AndFormula(
     fromCCFormula(fml.subformulas.first(), manager),
     fromCCFormula(fml.subformulas.last(), manager),
     manager,
-    fml.immutablePattern
+    fml.disableConfigItems
 )

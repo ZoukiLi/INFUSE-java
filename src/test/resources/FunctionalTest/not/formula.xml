@@ -10,7 +10,7 @@
                             <param pos="var1" var="a"/>
                         </bfunc>
                     </forall>
-                    <exists var="b" in="B">
+                    <exists var="b" in="B" non-removable="B">
                         <bfunc name="equal_const_y_1">
                             <!--b.y == 1-->
                             <param pos="var1" var="b"/>

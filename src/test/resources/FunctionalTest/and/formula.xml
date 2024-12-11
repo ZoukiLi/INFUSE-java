@@ -41,4 +41,35 @@
             </and>
         </formula>
     </rule>
+    <rule>
+        <id>rule3</id>
+        <formula>
+            <and>
+                <forall var="a" in="A">
+                    <not>
+                        <bfunc name="equal_const_z_0">
+                            <!--a.z != 0-->
+                            <param pos="var1" var="a"/>
+                        </bfunc>
+                    </not>
+                </forall>
+                <exists var="b" in="B">
+                    <forall var="a" in="A">
+                        <and>
+                            <not>
+                                <bfunc name="equal_const_z_0">
+                                    <!--a.z != 0-->
+                                    <param pos="var1" var="a"/>
+                                </bfunc>
+                            </not>
+                            <bfunc name="equal_const_z_1">
+                                <!--b.z == 1-->
+                                <param pos="var1" var="b"/>
+                            </bfunc>
+                        </and>
+                    </forall>
+                </exists>
+            </and>
+        </formula>
+    </rule>
 </rules>

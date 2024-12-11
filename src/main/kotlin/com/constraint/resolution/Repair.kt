@@ -2,35 +2,56 @@ package com.constraint.resolution
 
 import com.CC.Contexts.ContextChange
 
+enum class RepairType {
+    ADDITION,
+    UPDATE,
+    REMOVAL,
+}
+
+// User Config for Disable Repair of a given type and pattern
+data class RepairDisableConfigItem(
+    val repairType: RepairType,
+    val patternName: String
+)
+
 interface RepairAction {
+    fun repairType(): RepairType
     fun execute(patternMap: PatternMap): PatternMap
     fun display(): String
+    fun reverse(manager: ContextManager): List<ContextChange>
     fun applyTo(manager: ContextManager): List<ContextChange>
-    fun affectedBy(pattern: String, manager: ContextManager): Boolean
+    fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager): Boolean
 }
 
 data class AdditionRepairAction(val context: Context, val patternName: String) : RepairAction {
-    override fun execute(patternMap: PatternMap): PatternMap {
-        return patternMap.mapValues { (name, pat) -> if (name == patternName) pat + context else pat }
-    }
+    override fun repairType() = RepairType.ADDITION
+    override fun execute(patternMap: PatternMap): PatternMap =
+        patternMap.mapValues { (name, pat) -> if (name == patternName) pat + context else pat }
 
     override fun display(): String = "<+, $patternName, $context>"
 
+    override fun reverse(manager: ContextManager): List<ContextChange> =
+        manager.deleteContextFromPattern(context, patternName)
+
     override fun applyTo(manager: ContextManager) = manager.addContextToPattern(context, listOf(patternName))
 
-    override fun affectedBy(pattern: String, manager: ContextManager) = pattern == patternName
+    override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
+        userConfig.repairType == repairType() && userConfig.patternName == patternName
 }
 
 data class RemovalRepairAction(val context: Context, val patternName: String) : RepairAction {
-    override fun execute(patternMap: PatternMap): PatternMap {
-        return patternMap.mapValues { (name, pat) -> if (name == patternName) pat - context else pat }
-    }
+    override fun repairType() = RepairType.REMOVAL
+    override fun execute(patternMap: PatternMap): PatternMap =
+        patternMap.mapValues { (name, pat) -> if (name == patternName) pat - context else pat }
 
     override fun display(): String = "<-, $patternName, $context>"
 
+    override fun reverse(manager: ContextManager) = manager.addContextToPattern(context, listOf(patternName))
+
     override fun applyTo(manager: ContextManager) = manager.deleteContextFromPattern(context, patternName)
 
-    override fun affectedBy(pattern: String, manager: ContextManager) = pattern == patternName
+    override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
+        userConfig.repairType == repairType() && userConfig.patternName == patternName
 }
 
 data class EqualizationRepairAction(
@@ -39,12 +60,17 @@ data class EqualizationRepairAction(
     val context2: Context,
     val attributeName2: String
 ) : RepairAction {
+    override fun repairType() = RepairType.UPDATE
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
     override fun display(): String = "<=, $context1.$attributeName1, $context2.$attributeName2>"
+    override fun reverse(manager: ContextManager) =
+        manager.updateContextAttribute(context1, attributeName1, context1.attributes[attributeName1]?.first)
+
     override fun applyTo(manager: ContextManager) =
         manager.updateContextAttribute(context1, attributeName1, context2.attributes[attributeName2]?.first)
 
-    override fun affectedBy(pattern: String, manager: ContextManager) = manager.patternsOf(context1).contains(pattern)
+    override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
+        userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
 }
 
 data class EqualizationConstRepairAction(
@@ -52,12 +78,17 @@ data class EqualizationConstRepairAction(
     val attributeName1: String,
     val value: String
 ) : RepairAction {
+    override fun repairType() = RepairType.UPDATE
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
     override fun display(): String = "<=, $context1.$attributeName1, $value>"
+    override fun reverse(manager: ContextManager) =
+        manager.updateContextAttribute(context1, attributeName1, context1.attributes[attributeName1]?.first)
+
     override fun applyTo(manager: ContextManager) =
         manager.updateContextAttribute(context1, attributeName1, value)
 
-    override fun affectedBy(pattern: String, manager: ContextManager) = manager.patternsOf(context1).contains(pattern)
+    override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
+        userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
 }
 
 data class DifferentiationRepairAction(
@@ -66,12 +97,17 @@ data class DifferentiationRepairAction(
     val context2: Context,
     val attributeName2: String
 ) : RepairAction {
+    override fun repairType() = RepairType.UPDATE
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
     override fun display(): String = "<!=, $context1.$attributeName1, $context2.$attributeName2>"
+    override fun reverse(manager: ContextManager) =
+        manager.updateContextAttribute(context1, attributeName1, context1.attributes[attributeName1]?.first)
+
     override fun applyTo(manager: ContextManager) =
         manager.updateContextAttribute(context1, attributeName1, null)
 
-    override fun affectedBy(pattern: String, manager: ContextManager) = manager.patternsOf(context1).contains(pattern)
+    override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
+        userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
 }
 
 data class DifferentiationConstRepairAction(
@@ -79,12 +115,17 @@ data class DifferentiationConstRepairAction(
     val attributeName1: String,
     val value: String
 ) : RepairAction {
+    override fun repairType() = RepairType.UPDATE
     override fun execute(patternMap: PatternMap): PatternMap = patternMap
     override fun display(): String = "<!=, $context1.$attributeName1, $value>"
+    override fun reverse(manager: ContextManager) =
+        manager.updateContextAttribute(context1, attributeName1, context1.attributes[attributeName1]?.first)
+
     override fun applyTo(manager: ContextManager) =
         manager.updateContextAttribute(context1, attributeName1, null)
 
-    override fun affectedBy(pattern: String, manager: ContextManager) = manager.patternsOf(context1).contains(pattern)
+    override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
+        userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
 }
 
 typealias Attribute = Pair<Context, String>
@@ -126,7 +167,8 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
         return actions.fold(patternMap) { acc, action -> action.execute(acc) }
     }
 
-    fun display(): String = actions.joinToString("\n") { it.display() } + "\nWeight: $weight"
+    fun display(): String =
+        actions.sortedBy { it.repairType() }.joinToString("\n") { it.display() }// + "\nWeight: $weight"
 
     infix fun and(other: RepairCase) = RepairCase(actions union other.actions, weight + other.weight)
 
@@ -144,7 +186,8 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
             .any { (x, y) -> disjointSet.find(x) == disjointSet.find(y) }
     }
 
-    fun applyTo(manager: ContextManager) = actions.flatMap { it.applyTo(manager) }
+    fun applyTo(manager: ContextManager) = actions.sortedBy { it.repairType() }.flatMap { it.applyTo(manager) }
+    fun reverse(manager: ContextManager) = actions.sortedByDescending { it.repairType() }.flatMap { it.reverse(manager) }
 
     constructor(action: RepairAction, weight: Double) : this(setOf(action), weight)
 }
@@ -153,15 +196,17 @@ data class RepairSuite(val cases: Set<RepairCase>) {
     fun display(): String =
         cases.mapIndexed { index, case -> "Case $index.\n${case.display()}" }.joinToString("\n----------\n")
 
-    fun filterImmutable(immutablePattern: List<String>?, manager: ContextManager?): RepairSuite {
-        if (immutablePattern == null || manager == null) {
+    fun forEachIndexed(action: (Int, RepairCase) -> Unit) = cases.forEachIndexed(action)
+
+    fun filterImmutable(userConfig: List<RepairDisableConfigItem>?, manager: ContextManager?): RepairSuite {
+        if (userConfig == null || manager == null) {
             return this
         }
         return RepairSuite(
             cases
                 .filterNot {
                     it.actions.any {
-                        immutablePattern.any { pattern -> it.affectedBy(pattern, manager) }
+                        userConfig.any { pattern -> it.affectedBy(pattern, manager) }
                     }
                 }
                 .toSet())

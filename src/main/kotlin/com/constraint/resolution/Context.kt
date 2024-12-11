@@ -3,10 +3,11 @@ package com.constraint.resolution
 import com.CC.Contexts.ContextChange
 import java.util.concurrent.atomic.AtomicInteger
 typealias ContextAttribute = Pair<String, Boolean>
+typealias AttributeMap = Map<String, ContextAttribute>
 
 data class Context(
     val id: Int,
-    val attributes: Map<String, ContextAttribute>,
+    val attributes: AttributeMap,
     var ccContext: com.CC.Contexts.Context? = null
 ) {
     override fun toString() = attributes["name"]?.first ?: "unknown($id)"
@@ -41,7 +42,7 @@ object IdCounter {
 
 // Context Management
 class ContextManager {
-    val pool = ArrayDeque<Context>()
+    val pool = ArrayDeque<Context?>()
     val patternTable = ArrayDeque<List<String>>()
     val patternMap = mutableMapOf<String, MutablePattern>()
     var count = 0
@@ -53,7 +54,6 @@ class ContextManager {
     fun constructContext(attributes: Map<String, String>): Context {
         val id = count++
         val context = Context(id, attributes.mapValues { (_, v) -> v to true })
-        pool.add(id - prefixCount, context)
         val ccContext = com.CC.Contexts.Context()
         ccContext.ctx_id = context.id.toString()
         attributes.forEach { (k, v) -> ccContext.ctx_fields[k] = v }
@@ -64,7 +64,23 @@ class ContextManager {
     // Add a Context into Patterns.
     // Return the context changes for this addition.
     fun addContextToPattern(context: Context, patternName: List<String>): List<ContextChange> {
-        patternTable.add(context.id - prefixCount, patternName)
+        if (context.id < prefixCount) {
+            // if context is in prefix, push front (prefixCount - context.id) to pool
+            repeat(prefixCount - context.id) {
+                pool.addFirst(null)
+                patternTable.addFirst(emptyList())
+            }
+            prefixCount = context.id
+        }
+        if (context.id - prefixCount >= pool.size) {
+            // if context is not in pool, push null to pool
+            repeat(context.id - prefixCount - pool.size + 1) {
+                pool.add(null)
+                patternTable.add(emptyList())
+            }
+        }
+        pool[context.id - prefixCount] = context
+        patternTable[context.id - prefixCount] = patternName
         // if pattern name is new
         patternName.forEach {
             patternMap.putIfAbsent(it, mutableSetOf())
@@ -83,8 +99,9 @@ class ContextManager {
             return emptyList()
         }
         patternTable[context.id - prefixCount] = patternsOf(context).filter { it != patternName }
-        patternMap[patternName]?.remove(context)
-        val change = listOf(ContextChange(ContextChange.Change_Type.DELETION, patternName, context.ccContext!!))
+        patternMap[patternName]?.removeIf { it.id == context.id }
+        val ccContext = pool[context.id - prefixCount]?.ccContext!!
+        val change = listOf(ContextChange(ContextChange.Change_Type.DELETION, patternName, ccContext))
         // clean pool from first by pattern
         while (pool.isNotEmpty() && patternTable.isNotEmpty() && patternTable.first().isEmpty()) {
             pool.removeFirst()
@@ -103,16 +120,17 @@ class ContextManager {
             return emptyList()
         }
         // pool changes
-        val newContext = context.updateAttribute(attribute, value)
+        val curContext = pool[context.id - prefixCount]!!
+        val newContext = curContext.updateAttribute(attribute, value)
         pool[context.id - prefixCount] = newContext
         patternsOf(context).forEach { patternName ->
-            patternMap[patternName]?.remove(context)
+            patternMap[patternName]?.removeIf { it.id == context.id }
             patternMap[patternName]?.add(newContext)
         }
         // generate context changes
         return patternsOf(context).flatMap { patternName ->
             listOf(
-                ContextChange(ContextChange.Change_Type.DELETION, patternName, context.ccContext!!),
+                ContextChange(ContextChange.Change_Type.DELETION, patternName, curContext.ccContext!!),
                 ContextChange(ContextChange.Change_Type.ADDITION, patternName, newContext.ccContext!!)
             )
         }

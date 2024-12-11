@@ -5,14 +5,17 @@ import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
 data class OrFormula(
-    val left: IFormula, val right: IFormula, val manager: ContextManager?, val immutablePattern: List<String>? = null
+    val left: IFormula,
+    val right: IFormula,
+    val manager: ContextManager?,
+    val userConfig: List<RepairDisableConfigItem>? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap) =
         left.evaluate(assignment, patternMap) or right.evaluate(assignment, patternMap)
 
     override fun repairF2T(assignment: Assignment, patternMap: PatternMap, lk: Boolean) =
         (left.repairF2T(assignment, patternMap, lk) or right.repairF2T(assignment, patternMap, lk)).filterImmutable(
-            immutablePattern, manager
+            userConfig, manager
         )
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
@@ -27,7 +30,7 @@ data class OrFormula(
                 false to true -> right.repairT2F(assignment, patternMap, lk)
                 true to false -> left.repairT2F(assignment, patternMap, lk)
                 else -> RepairSuite(setOf())
-            }.filterImmutable(immutablePattern, manager)
+            }.filterImmutable(userConfig, manager)
         }
         TODO("Locked repair not implemented for OrFormula")
     }
@@ -44,7 +47,7 @@ data class OrFormula(
 
     override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) =
         rctNode.children[0].repairF2T(lk) or rctNode.children[1].repairF2T(lk)
-            .filterImmutable(immutablePattern, manager)
+            .filterImmutable(userConfig, manager)
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean): RepairSuite {
         if (!lk) {
@@ -55,7 +58,7 @@ data class OrFormula(
                 Pair(false, true) -> rightNode.repairT2F(lk)
                 Pair(true, false) -> leftNode.repairT2F(lk)
                 else -> RepairSuite(setOf())
-            }.filterImmutable(immutablePattern, manager)
+            }.filterImmutable(userConfig, manager)
         }
         TODO("Not yet implemented")
     }
@@ -66,5 +69,5 @@ fun fromCCFormulaOr(fml: FOr, manager: ContextManager?) = OrFormula(
     fromCCFormula(fml.subformulas.first(), manager),
     fromCCFormula(fml.subformulas.last(), manager),
     manager,
-    fml.immutablePattern
+    fml.disableConfigItems
 )

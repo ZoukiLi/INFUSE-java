@@ -18,7 +18,7 @@ interface IFormula {
 
 fun fromCCFormula(fml: Formula, manager: ContextManager?) : IFormula = when(fml) {
         is FAnd -> fromCCFormulaAnd(fml, manager)
-        is FBfunc -> fromCCFormulaBfunc(fml)
+        is FBfunc -> fromCCFormulaBfunc(fml, manager)
         is FExists -> fromCCFormulaExists(fml, manager)
         is FForall -> fromCCFormulaForall(fml, manager)
         is FImplies -> fromCCFormulaImplies(fml, manager)

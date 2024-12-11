@@ -5,7 +5,8 @@ import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
 
 data class EqualFormula(
-    val var1: Variable, val attr1: String, val var2: Variable, val attr2: String, val weight: Double = 1.0
+    val var1: Variable, val attr1: String, val var2: Variable, val attr2: String, val weight: Double = 1.0,
+    val manager: ContextManager?, val disableConfigItems: List<RepairDisableConfigItem>? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap): Boolean {
         val value1 = assignment[var1]?.attributes?.get(attr1) ?: return false
@@ -23,7 +24,7 @@ data class EqualFormula(
             assignment.getValue(var2), attr2,
         ), weight
 
-    )
+    ).filterImmutable(disableConfigItems, manager)
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean) = RepairSuite(
         // One repair case: differentiate the values of the two attributes
@@ -31,7 +32,7 @@ data class EqualFormula(
             assignment.getValue(var1), attr1,
             assignment.getValue(var2), attr2,
         ), weight
-    )
+    ).filterImmutable(disableConfigItems, manager)
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
         RCTNode(this, assignment, patternMap, ccRtNode)
@@ -52,7 +53,7 @@ data class EqualFormula(
             rctNode.assignment.getValue(var1), attr1,
             rctNode.assignment.getValue(var2), attr2,
         ), weight
-    )
+    ).filterImmutable(disableConfigItems, manager)
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) = RepairSuite(
         // One repair case: differentiate the values of the two attributes
@@ -60,10 +61,12 @@ data class EqualFormula(
             rctNode.assignment.getValue(var1), attr1,
             rctNode.assignment.getValue(var2), attr2,
         ), weight
-    )
+    ).filterImmutable(disableConfigItems, manager)
 }
 
-data class EqualConstFormula(val var1: Variable, val attr1: String, val value: String, val weight: Double = 1.0) : IFormula {
+data class EqualConstFormula(val var1: Variable, val attr1: String, val value: String, val weight: Double = 1.0,
+    val manager: ContextManager?, val disableConfigItems: List<RepairDisableConfigItem>? = null
+) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap): Boolean {
         val value1 = assignment[var1]?.attributes?.get(attr1) ?: return false
         if (!value1.second) {
@@ -77,7 +80,7 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
             assignment.getValue(var1), attr1,
             value,
         ), weight
-    )
+    ).filterImmutable(disableConfigItems, manager)
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean) = RepairSuite(
         // One repair case: differentiate the constant value with the value of the attribute
@@ -85,7 +88,7 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
             assignment.getValue(var1), attr1,
             value,
         ), weight
-    )
+    ).filterImmutable(disableConfigItems, manager)
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
         RCTNode(this, assignment, patternMap, ccRtNode)
@@ -105,7 +108,7 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
             rctNode.assignment.getValue(var1), attr1,
             value,
         ), weight
-    )
+    ).filterImmutable(disableConfigItems, manager)
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) = RepairSuite(
         // One repair case: differentiate the constant value with the value of the attribute
@@ -113,10 +116,10 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
             rctNode.assignment.getValue(var1), attr1,
             value,
         ), weight
-    )
+    ).filterImmutable(disableConfigItems, manager)
 }
 
-fun fromCCFormulaBfunc(fml: FBfunc): IFormula {
+fun fromCCFormulaBfunc(fml: FBfunc, manager: ContextManager?): IFormula {
     val names = fml.func.split('_')
     assert(names.first() == "equal")
     return if (names[1] == "const") {
@@ -124,7 +127,7 @@ fun fromCCFormulaBfunc(fml: FBfunc): IFormula {
         val attr1 = names[2]
         val value = names[3]
         val weight = 1.0
-        EqualConstFormula(var1, attr1, value, weight)
+        EqualConstFormula(var1, attr1, value, weight, manager, fml.disableConfigItems)
     }
     else {
         val var1 = fml.params.getValue("var1")
@@ -132,6 +135,6 @@ fun fromCCFormulaBfunc(fml: FBfunc): IFormula {
         val attr1 = names[1]
         val attr2 = names[2]
         val weight = 1.0
-        EqualFormula(var1, attr1, var2, attr2, weight)
+        EqualFormula(var1, attr1, var2, attr2, weight, manager, fml.disableConfigItems)
     }
 }

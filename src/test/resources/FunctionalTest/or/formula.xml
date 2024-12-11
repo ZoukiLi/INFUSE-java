@@ -12,7 +12,7 @@
                     </not>
                 </forall>
                 <not>
-                    <exists var="b" in="B">
+                    <exists var="b" in="B" non-updatable="B">
                         <bfunc name="equal_const_y_1">
                             <!--b.y == 1-->
                             <param pos="var1" var="b"/>

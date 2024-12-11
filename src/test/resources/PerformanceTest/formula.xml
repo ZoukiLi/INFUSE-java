@@ -27,7 +27,7 @@
         </formula>
     </rule>
     <rule>
-        <id>rule_jux_im</id>
+        <id>rule_jux_non-updatable</id>
         <formula>
             <and>
                 <forall var="a" in="A">
@@ -35,8 +35,25 @@
                         <param pos="var1" var="a"/>
                     </bfunc>
                 </forall>
-                <forall var="b" in="B" immutable="B">
-                    <bfunc name="equal_const_x_0">
+                <forall var="b" in="B" non-updatable="B">
+                    <bfunc name="equal_const_x_0" non-updatable="B">
+                        <param pos="var1" var="b"/>
+                    </bfunc>
+                </forall>
+            </and>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_jux_non-removable</id>
+        <formula>
+            <and non-removale="A,B">
+                <forall var="a" in="A" non-removable="A">
+                    <bfunc name="equal_const_x_0" non-removeable="A">
+                        <param pos="var1" var="a"/>
+                    </bfunc>
+                </forall>
+                <forall var="b" in="B" non-removable="B">
+                    <bfunc name="equal_const_x_0" non-removeable="B">
                         <param pos="var1" var="b"/>
                     </bfunc>
                 </forall>
@@ -61,15 +78,15 @@
         </formula>
     </rule>
     <rule>
-        <id>rule_nested_im</id>
+        <id>rule_nested_non-removable</id>
         <formula>
-            <forall var="a" in="A">
-                <forall var="b" in="B" immutable="B">
-                    <and immutable="B">
-                        <bfunc name="equal_const_x_0">
+            <forall var="a" in="A" non-removable="A">
+                <forall var="b" in="B" non-removable="B">
+                    <and non-removale="A,B">
+                        <bfunc name="equal_const_x_0" non-removeable="A">
                             <param pos="var1" var="a"/>
                         </bfunc>
-                        <bfunc name="equal_const_x_0">
+                        <bfunc name="equal_const_x_0" non-removeable="B">
                             <param pos="var1" var="b"/>
                         </bfunc>
                     </and>
@@ -77,5 +94,21 @@
             </forall>
         </formula>
     </rule>
-
+    <rule>
+        <id>rule_nested_non-updatable</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B" non-updatable="B">
+                    <and non-updatable="B">
+                        <bfunc name="equal_const_x_0">
+                            <param pos="var1" var="a"/>
+                        </bfunc>
+                        <bfunc name="equal_const_x_0" non-updatable="B">
+                            <param pos="var1" var="b"/>
+                        </bfunc>
+                    </and>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
 </rules>

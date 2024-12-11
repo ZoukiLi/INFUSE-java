@@ -4,12 +4,8 @@ import com.CC.Constraints.Rules.RuleHandler
 import com.CC.Contexts.ContextChange
 import com.CC.Contexts.ContextPool
 import com.CC.Middleware.Checkers.PCC
-import com.constraint.resolution.Context
 import com.constraint.resolution.ContextManager
-import com.constraint.resolution.PatternMap
 import com.constraint.resolution.fromCCFormula
-import com.constraint.resolution.makeContext
-import com.constraint.resolution.toContextChanges
 import java.io.File
 import java.time.Duration
 import kotlin.test.Test
@@ -46,37 +42,14 @@ class PerformanceTest {
         }
     }
 
+    private val testSizes = (8..12 step 2) + (20..120 step 20)
+
     @Test
     fun genData() {
-        genTestData("data_4", 4)
-        genTestData("data_5", 5)
-        genTestData("data_6", 6)
-        genTestData("data_7", 7)
-        genTestData("data_8", 8)
-        genTestData("data_10", 10)
-        genTestData("data_15", 15)
-        genTestData("data_20", 20)
-        genTestData("data_30", 30)
-        genTestData("data_40", 40)
-        genTestData("data_60", 60)
-        genTestData("data_80", 80)
-        genTestData("data_100", 100)
-        genTestData("data_120", 120)
-
-        genTestData("data_4_one_side", 4, true)
-        genTestData("data_5_one_side", 5, true)
-        genTestData("data_6_one_side", 6, true)
-        genTestData("data_7_one_side", 7, true)
-        genTestData("data_8_one_side", 8, true)
-        genTestData("data_10_one_side", 10, true)
-        genTestData("data_15_one_side", 15, true)
-        genTestData("data_20_one_side", 20, true)
-        genTestData("data_30_one_side", 30, true)
-        genTestData("data_40_one_side", 40, true)
-        genTestData("data_60_one_side", 60, true)
-        genTestData("data_80_one_side", 80, true)
-        genTestData("data_100_one_side", 100, true)
-        genTestData("data_120_one_side", 120, true)
+        testSizes.forEach {
+            genTestData("data_${it}", it)
+            genTestData("data_${it}_one_side", it, true)
+        }
     }
 
     private fun initPool(ruleHandler: RuleHandler): ContextPool {
@@ -96,6 +69,7 @@ class PerformanceTest {
             }
         }
     }
+
     val testDir = "src/test/resources/PerformanceTest"
     fun readCSVPatterns(file: String, manager: ContextManager): List<ContextChange> {
         // get data.csv
@@ -109,7 +83,7 @@ class PerformanceTest {
         val patIndex = header.indexOf("pattern")
         val attrIndices = header.filter { it != "pattern" }.map { header.indexOf(it) }
 
-        return lines.subList(1, lines.size).flatMap{ line ->
+        return lines.subList(1, lines.size).flatMap { line ->
             val values = line.split(",")
             val pattern = values[patIndex]
             val attributes = attrIndices.associate { header[it] to values[it] }
@@ -117,49 +91,60 @@ class PerformanceTest {
             manager.addContextToPattern(context, listOf(pattern))
         }
     }
+
+    fun printHeap() {
+        val mb = 1024 * 1024
+        val runtime = Runtime.getRuntime()
+        println("##### Heap utilization statistics [MB] #####")
+        println("Used Memory: " + (runtime.totalMemory() - runtime.freeMemory()) / mb)
+        println("Free Memory: " + runtime.freeMemory() / mb)
+        println("Total Memory: " + runtime.totalMemory() / mb)
+        println("Max Memory: " + runtime.maxMemory() / mb)
+    }
+
     @Test
     fun performanceTests() {
         genData()
-        performanceTest("data_4", setOf())
-        performanceTest("data_5", setOf())
-//        performanceTest("data_6", setOf())
-//        performanceTest("data_7", setOf())
-        performanceTest("data_8", setOf())
+        printHeap()
+        testSizes.forEach { size ->
+            val resultFile = File("${testDir}/result/size_${size}.txt")
+            // make dir
+            if (!resultFile.parentFile.exists()) {
+                resultFile.parentFile.mkdirs()
+            }
+            if (resultFile.exists()) resultFile.delete()
 
-        performanceTest("data_4_one_side", setOf())
-        performanceTest("data_5_one_side", setOf())
-//        performanceTest("data_6_one_side", setOf())
-//        performanceTest("data_7_one_side", setOf())
-        performanceTest("data_8_one_side", setOf())
+            resultFile.appendText("--- Test data: data_${size} ---\n")
+            val skipRules = maxSize.filter { it.value <= size }.keys
+            val oom1 = performanceTest("data_${size}", resultFile, skipRules)
+            oom1.forEach {
+                maxSize[it] = size
+            }
+            resultFile.appendText("\n")
 
-        performanceTest("data_10", setOf())
-        performanceTest("data_10_one_side", setOf())
-//        performanceTest("data_15", setOf("rule_nested"))
-//        performanceTest("data_15_one_side", setOf("rule_nested"))
-        performanceTest("data_20", setOf("rule_nested"))
-        performanceTest("data_20_one_side", setOf("rule_nested", "rule_nested_im"))
-        performanceTest("data_30", setOf("rule_nested", "rule_nested_im"))
-        performanceTest("data_30_one_side", setOf("rule_nested", "rule_nested_im"))
-
-        performanceTest("data_40", setOf("rule_nested", "rule_nested_im"))
-        performanceTest("data_40_one_side", setOf("rule_nested", "rule_nested_im"))
-        performanceTest("data_60", setOf("rule_nested", "rule_nested_im"))
-        performanceTest("data_60_one_side", setOf("rule_nested", "rule_nested_im"))
-        performanceTest("data_80", setOf("rule_nested", "rule_nested_im"))
-        performanceTest("data_80_one_side", setOf("rule_nested", "rule_nested_im"))
-        performanceTest("data_100", setOf("rule_nested", "rule_nested_im"))
-        performanceTest("data_100_one_side", setOf("rule_nested", "rule_nested_im"))
-        performanceTest("data_120_one_side", setOf("rule_nested", "rule_nested_im"))
-    }
-    fun performanceTest(testData: String, exceptedRule: Set<String>) {
-        println("Test data: $testData")
-        val resultFile = File("${testDir}/result/${testData}_rst.txt")
-        // make dir
-        if (!resultFile.parentFile.exists()) {
-            resultFile.parentFile.mkdirs()
+            resultFile.appendText("--- Test data: data_${size}(one_side) ---\n")
+            val skipRulesOneSide = maxSizeOneSide.filter { it.value <= size }.keys
+            val oom2 = performanceTest("data_${size}_one_side", resultFile, skipRulesOneSide)
+            oom2.forEach {
+                maxSizeOneSide[it] = size
+            }
         }
-        if (resultFile.exists()) resultFile.delete()
-        resultFile.appendText("rule, size, time(tree), time(recursive)\n")
+        println("Max size:")
+        maxSize.toList().sortedBy { it.first }.forEach {
+            println("${it.first} to ${it.second}")
+        }
+        println("Max size (one side):")
+        maxSizeOneSide.toList().sortedBy { it.first }.forEach {
+            println("${it.first} to ${it.second}")
+        }
+    }
+
+    private val maxSize: MutableMap<String, Int> = mutableMapOf()
+    private val maxSizeOneSide: MutableMap<String, Int> = mutableMapOf()
+
+    fun performanceTest(testData: String, resultFile: File, skipRules: Set<String>): Set<String> {
+        println("Test data: $testData")
+        resultFile.appendText("rule, size, time-tree(ms), time-recursive(ms)\n")
 
         val fmlPath = "${testDir}/formula.xml"
         val ruleHandler = RuleHandler()
@@ -175,30 +160,40 @@ class PerformanceTest {
                 checker.ctxChangeCheckIMD(it)
             }
         }
+
+        val oomRules = mutableSetOf<String>()
         checker.ruleHandler.ruleMap
-            .filterNot { exceptedRule.contains(it.key) }
-            .forEach {
-                println("Repairing rule: ${it.key}")
-            val formula = fromCCFormula(it.value.formula, manager)
-            val cctNode = it.value.cctRoot
-            val data = manager.patternMap
-            val node = formula.createRCTNode(mapOf(), data, cctNode)
-            var size = 0
-            val t1 = measureTime("Repair time (tree)") {
-                val result = node.repairF2T()
-                size = result.cases.size
+            .filterNot { skipRules.contains(it.key) }
+            .toList().sortedBy { pair -> pair.first }.forEach {
+                println("Repairing rule: ${it.first}")
+                val formula = fromCCFormula(it.second.formula, manager)
+                val cctNode = it.second.cctRoot
+                val data = manager.patternMap
+                val node = formula.createRCTNode(mapOf(), data, cctNode)
+                var size = 0
+                try {
+                    val t1 = measureTime("Repair time (tree)") {
+                        val result = node.repairF2T()
+                        size = result.cases.size
+                    }
+                    val t2 = measureTime("Repair time (recursive)") {
+                        formula.repairF2T(mapOf(), data)
+                    }
+                    resultFile.appendText("${it.first}, ${size}, ${t1.toMillis()}, ${t2.toMillis()}\n")
+                } catch (e: OutOfMemoryError) {
+                    oomRules.add(it.first)
+                    println("Out of memory: $e")
+                    resultFile.appendText("${it.first}, OOM, OOM, OOM\n")
+                }
             }
-            val t2 = measureTime("Repair time (recursive)") {
-                formula.repairF2T(mapOf(), data)
-            }
-            resultFile.appendText("${it.key}, ${size}, ${t1.toKotlinDuration()}, ${t2.toKotlinDuration()}\n")
-        }
+        return oomRules
     }
 
     private fun displayTime(start: Long, end: Long, message: String) {
         val duration = Duration.ofMillis(end - start)
         println("$message: ${duration.toKotlinDuration()}")
     }
+
     // do something and measure time
     private fun measureTime(description: String, block: () -> Unit): Duration {
         val start = System.currentTimeMillis()

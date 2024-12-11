@@ -34,6 +34,10 @@ repositories {
     mavenCentral()
 }
 
+tasks.withType(Test).configureEach {
+    // Set the maximum heap size for the test JVM
+    maxHeapSize = "20g" // Adjust the size (e.g., 512m, 1g, 2g) as needed
+}
 
 dependencies {
     implementation 'org.dom4j:dom4j:2.1.3'

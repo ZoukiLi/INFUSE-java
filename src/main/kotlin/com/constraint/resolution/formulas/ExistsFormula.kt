@@ -12,7 +12,7 @@ data class ExistsFormula(
     val filter: String?,
     val filterDep: String?,
     val manager: ContextManager?,
-    val immutablePattern: List<String>? = null
+    val userConfig: List<RepairDisableConfigItem>? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap): Boolean {
         val filteredMap =
@@ -23,7 +23,7 @@ data class ExistsFormula(
     override fun repairF2T(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
         val filteredMap =
             patternMap + (pattern to patternMap[pattern]!!.filterBy(filter, filterDep?.let { assignment[it] }))
-        val newContext = makeContext(mapOf())
+        val newContext = manager?.constructContext(mapOf("name" to "new")) ?: makeContext(mapOf())
         val repairSuite = filteredMap.getValue(pattern).map {
             subFormula.repairF2T(bind(assignment, variable, it), filteredMap, lk)
         }.fold(RepairSuite()) { acc, suite -> acc or suite } or when (subFormula.evaluate(
@@ -38,7 +38,7 @@ data class ExistsFormula(
                 ), filteredMap, lk
             )
         }
-        return repairSuite.filterImmutable(immutablePattern, manager)
+        return repairSuite.filterImmutable(userConfig, manager)
     }
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
@@ -51,7 +51,7 @@ data class ExistsFormula(
                         assignment, variable, it
                     ), filteredMap, lk
                 )
-            }.fold(RepairSuite()) { acc, suite -> acc and suite }.filterImmutable(immutablePattern, manager)
+            }.fold(RepairSuite()) { acc, suite -> acc and suite }.filterImmutable(userConfig, manager)
     }
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
@@ -68,7 +68,7 @@ data class ExistsFormula(
             it.repairF2T(lk)
         }.fold(RepairSuite()) { acc, suite -> acc or suite } or repairByDefaultContext(rctNode, lk)
         return repairSuite.filterImmutable(
-            immutablePattern, manager
+            userConfig, manager
         )
     }
 
@@ -76,10 +76,10 @@ data class ExistsFormula(
         it.repairT2F(lk) or RepairSuite(
             RemovalRepairAction(it.assignment.getValue(variable), pattern), weight
         )
-    }.fold(RepairSuite()) { acc, suite -> acc and suite }.filterImmutable(immutablePattern, manager)
+    }.fold(RepairSuite()) { acc, suite -> acc and suite }.filterImmutable(userConfig, manager)
 
     private fun repairByDefaultContext(rctNode: RCTNode, lk: Boolean): RepairSuite {
-        val newContext = makeContext(mapOf())
+        val newContext = manager?.constructContext(mapOf("name" to "new")) ?: makeContext(mapOf())
         val addRepair = RepairSuite(AdditionRepairAction(newContext, pattern), weight)
         val addNode = subFormula.createRCTNode(bind(rctNode.assignment, variable, newContext), rctNode.patternMap)
         return when (addNode.getTruth()) {
@@ -97,5 +97,5 @@ fun fromCCFormulaExists(fml: FExists, manager: ContextManager?) = ExistsFormula(
     fml.filter,
     fml.filterDep,
     manager,
-    fml.immutablePattern
+    fml.disableConfigItems
 )
