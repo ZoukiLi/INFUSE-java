@@ -187,7 +187,8 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
     }
 
     fun applyTo(manager: ContextManager) = actions.sortedBy { it.repairType() }.flatMap { it.applyTo(manager) }
-    fun reverse(manager: ContextManager) = actions.sortedByDescending { it.repairType() }.flatMap { it.reverse(manager) }
+    fun reverse(manager: ContextManager) =
+        actions.sortedByDescending { it.repairType() }.flatMap { it.reverse(manager) }
 
     constructor(action: RepairAction, weight: Double) : this(setOf(action), weight)
 }
@@ -223,3 +224,47 @@ data class RepairSuite(val cases: Set<RepairCase>) {
     constructor(action: RepairAction, weight: Double) : this(setOf(RepairCase(action, weight)))
     constructor() : this(emptySet())
 }
+
+fun chain(vararg cases: Sequence<RepairCase>): Sequence<RepairCase> = chain(cases.asSequence())
+
+fun chain(caseSeqs: Sequence<Sequence<RepairCase>>) = caseSeqs.flatten()
+
+fun cartesianProduct(vararg cases: Sequence<RepairCase>): Sequence<RepairCase> = when {
+    cases.isEmpty() -> emptySequence()
+    else -> sequence {
+        val tailProduct = cartesianProduct(*cases.drop(1).toTypedArray())
+        if (tailProduct.none()) {
+            yieldAll(cases.first())
+            return@sequence
+        }
+        if (cases.first().none()) {
+            yieldAll(tailProduct)
+            return@sequence
+        }
+        cases.first().forEach { head ->
+            tailProduct.forEach { tail ->
+                yield(head and tail)
+            }
+        }
+    }
+}
+
+fun cartesianProduct(caseSeqs: Sequence<Sequence<RepairCase>>) =
+    cartesianProduct(*caseSeqs.toList().toTypedArray())
+
+fun filterImmutable(
+    userConfig: List<RepairDisableConfigItem>?,
+    manager: ContextManager?,
+    sequence: Sequence<RepairCase>
+): Sequence<RepairCase> =
+    when {
+        userConfig == null || manager == null -> {
+            sequence
+        }
+
+        else -> sequence.filter { repairCase ->
+            repairCase.actions.none { action ->
+                userConfig.any { pattern -> action.affectedBy(pattern, manager) }
+            }
+        }
+    }

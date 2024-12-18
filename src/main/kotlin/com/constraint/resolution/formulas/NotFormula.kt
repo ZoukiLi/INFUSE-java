@@ -17,6 +17,10 @@ data class NotFormula(
         assignment: Assignment, patternMap: PatternMap, lk: Boolean
     ) = subFormula.repairF2T(assignment, patternMap, lk).filterImmutable(userConfig, manager)
 
+    override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
+        TODO("Not yet implemented")
+    }
+
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
         RCTNode(this, assignment, patternMap, ccRtNode)
 

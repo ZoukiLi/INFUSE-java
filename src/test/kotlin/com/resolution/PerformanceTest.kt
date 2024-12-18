@@ -144,7 +144,7 @@ class PerformanceTest {
 
     fun performanceTest(testData: String, resultFile: File, skipRules: Set<String>): Set<String> {
         println("Test data: $testData")
-        resultFile.appendText("rule, size, time-tree(ms), time-recursive(ms)\n")
+        resultFile.appendText("rule,\tsize(recursive),\tsize(lazy),\ttime(recursive),\ttime(lazy)\n")
 
         val fmlPath = "${testDir}/formula.xml"
         val ruleHandler = RuleHandler()
@@ -171,19 +171,25 @@ class PerformanceTest {
                 val data = manager.patternMap
                 val node = formula.createRCTNode(mapOf(), data, cctNode)
                 var size = 0
+                var size2 = 0
                 try {
                     val t1 = measureTime("Repair time (tree)") {
-                        val result = node.repairF2T()
-                        size = result.cases.size
+                        // val result = node.repairF2T()
+                        // size = result.cases.size
                     }
                     val t2 = measureTime("Repair time (recursive)") {
-                        formula.repairF2T(mapOf(), data)
+                        val r2 = formula.repairF2T(mapOf(), data)
+                        size = r2.cases.count()
                     }
-                    resultFile.appendText("${it.first}, ${size}, ${t1.toMillis()}, ${t2.toMillis()}\n")
+                    val t3 = measureTime("Repair time (lazy)") {
+                        val r3 = formula.repairF2TSeq(mapOf(), data)
+                        size2 = r3.count()
+                    }
+                    resultFile.appendText("${it.first},\t$size,\t$size2,\t$t2,\t$t3\n")
                 } catch (e: OutOfMemoryError) {
                     oomRules.add(it.first)
                     println("Out of memory: $e")
-                    resultFile.appendText("${it.first}, OOM, OOM, OOM\n")
+                    resultFile.appendText("${it.first},\t$size,\t$size2,\tOOM,\tOOM\n")
                 }
             }
         return oomRules
@@ -195,11 +201,11 @@ class PerformanceTest {
     }
 
     // do something and measure time
-    private fun measureTime(description: String, block: () -> Unit): Duration {
+    private fun measureTime(description: String, block: () -> Unit): Long {
         val start = System.currentTimeMillis()
         block()
         val end = System.currentTimeMillis()
         displayTime(start, end, description)
-        return Duration.ofMillis(end - start)
+        return end - start
     }
 }

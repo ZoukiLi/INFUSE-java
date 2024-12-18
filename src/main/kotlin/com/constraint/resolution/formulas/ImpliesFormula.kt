@@ -39,6 +39,10 @@ data class ImpliesFormula(
         TODO("Locked repairs not implemented for ImpliesFormula")
     }
 
+    override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
+        TODO("Not yet implemented")
+    }
+
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
         RCTNode(this, assignment, patternMap, ccRtNode)
 

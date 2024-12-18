@@ -10,7 +10,7 @@
         </formula>
     </rule>
     <rule>
-        <id>rule_jux</id>
+        <id>rule_flat</id>
         <formula>
             <and>
                 <forall var="a" in="A">
@@ -27,7 +27,7 @@
         </formula>
     </rule>
     <rule>
-        <id>rule_jux_non-updatable</id>
+        <id>rule_flat_non-updatable</id>
         <formula>
             <and>
                 <forall var="a" in="A">
@@ -44,7 +44,7 @@
         </formula>
     </rule>
     <rule>
-        <id>rule_jux_non-removable</id>
+        <id>rule_flat_non-removable</id>
         <formula>
             <and non-removale="A,B">
                 <forall var="a" in="A" non-removable="A">

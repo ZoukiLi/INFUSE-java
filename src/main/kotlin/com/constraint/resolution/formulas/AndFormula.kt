@@ -70,6 +70,28 @@ data class AndFormula(
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) =
         rctNode.children[0].repairT2F(lk) or rctNode.children[1].repairT2F(lk)
             .filterImmutable(userConfig, manager)
+
+    override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
+        if (!lk) {
+            val leftTruth = left.evaluate(assignment, patternMap)
+            val rightTruth = right.evaluate(assignment, patternMap)
+            val result = when (Pair(leftTruth, rightTruth)) {
+                // Repair the branched formula that is false
+                Pair(false, true) -> left.repairF2TSeq(assignment, patternMap, lk)
+                Pair(true, false) -> right.repairF2TSeq(assignment, patternMap, lk)
+                // Repair both branched formulas when both are false
+                Pair(false, false) -> cartesianProduct(
+                    left.repairF2TSeq(assignment, patternMap, lk),
+                    right.repairF2TSeq(assignment, patternMap, lk)
+                )
+
+                // Both true, nothing to do
+                else -> sequenceOf()
+            }
+            return filterImmutable(userConfig, manager, result)
+        }
+        TODO("Lock repair not implemented for AndFormula")
+    }
 }
 
 fun fromCCFormulaAnd(fml: FAnd, manager: ContextManager?) = AndFormula(

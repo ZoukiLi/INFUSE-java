@@ -15,43 +15,54 @@ data class ExistsFormula(
     val userConfig: List<RepairDisableConfigItem>? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap): Boolean {
-        val filteredMap =
-            patternMap + (pattern to patternMap[pattern]!!.filterBy(filter, filterDep?.let { assignment[it] }))
-        return filteredMap.getValue(pattern).any { subFormula.evaluate(bind(assignment, variable, it), filteredMap) }
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return false
+        return filteredPattern.any { subFormula.evaluate(bind(assignment, variable, it), patternMap) }
     }
 
     override fun repairF2T(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
-        val filteredMap =
-            patternMap + (pattern to patternMap[pattern]!!.filterBy(filter, filterDep?.let { assignment[it] }))
+        val filteredPattern =
+            patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return RepairSuite()
         val newContext = manager?.constructContext(mapOf("name" to "new")) ?: makeContext(mapOf())
-        val repairSuite = filteredMap.getValue(pattern).map {
-            subFormula.repairF2T(bind(assignment, variable, it), filteredMap, lk)
-        }.fold(RepairSuite()) { acc, suite -> acc or suite } or when (subFormula.evaluate(
-            bind(
-                assignment, variable, newContext
-            ), filteredMap
-        )) {
-            true -> RepairSuite(AdditionRepairAction(newContext, pattern), weight)
-            false -> RepairSuite(AdditionRepairAction(newContext, pattern), weight) and subFormula.repairF2T(
-                bind(
-                    assignment, variable, newContext
-                ), filteredMap, lk
-            )
+
+        val revertSuite = filteredPattern.map { subFormula.repairF2T(bind(assignment, variable, it), patternMap, lk) }
+            .fold(RepairSuite()) { acc, suite -> acc or suite }
+
+        val addSuite = RepairSuite(AdditionRepairAction(newContext, pattern), weight)
+        val bindNew = bind(assignment, variable, newContext)
+        val newCtxSuite = when (subFormula.evaluate(bindNew, patternMap)) {
+            true -> addSuite
+            false -> addSuite and subFormula.repairF2T(bindNew, patternMap, lk)
         }
+
+        val repairSuite = revertSuite or newCtxSuite
         return repairSuite.filterImmutable(userConfig, manager)
     }
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
-        val filteredMap =
-            patternMap + (pattern to patternMap[pattern]!!.filterBy(filter, filterDep?.let { assignment[it] }))
-        return filteredMap.getValue(pattern).filter { subFormula.evaluate(bind(assignment, variable, it), filteredMap) }
-            .map {
-                RepairSuite(RemovalRepairAction(it, pattern), weight) or subFormula.repairT2F(
-                    bind(
-                        assignment, variable, it
-                    ), filteredMap, lk
-                )
-            }.fold(RepairSuite()) { acc, suite -> acc and suite }.filterImmutable(userConfig, manager)
+        val filteredPattern =
+            patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return RepairSuite()
+
+        return filteredPattern.filter { subFormula.evaluate(bind(assignment, variable, it), patternMap) }.map {
+            val removalSuite = RepairSuite(RemovalRepairAction(it, pattern), weight)
+            val revertSuite = subFormula.repairT2F(bind(assignment, variable, it), patternMap, lk)
+            removalSuite or revertSuite
+        }.fold(RepairSuite()) { acc, suite -> acc and suite }.filterImmutable(userConfig, manager)
+    }
+
+    override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return emptySequence()
+        val newContext = manager?.constructContext(mapOf("name" to "new")) ?: makeContext(mapOf())
+
+        val revertSeqs = filteredPattern.map { subFormula.repairF2TSeq(bind(assignment, variable, it), patternMap, lk) }
+        val addSeq = sequenceOf(RepairCase(AdditionRepairAction(newContext, pattern), weight))
+        val bindNew = bind(assignment, variable, newContext)
+        val newCtxSeq = when (subFormula.evaluate(bindNew, patternMap)) {
+            true -> addSeq
+            false -> cartesianProduct(addSeq, subFormula.repairF2TSeq(bindNew, patternMap, lk))
+        }
+
+        val repairSeq = chain(chain(revertSeqs), newCtxSeq)
+        return filterImmutable(userConfig, manager, repairSeq)
     }
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
