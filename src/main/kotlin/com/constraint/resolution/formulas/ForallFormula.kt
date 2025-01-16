@@ -43,8 +43,8 @@ data class ForallFormula(
         val addSuite = RepairSuite(AdditionRepairAction(newContext, pattern), weight)
         val bindNew = bind(assignment, variable, newContext)
         val newCtxSuite = when (subFormula.evaluate(bindNew, patternMap)) {
-            true -> addSuite
-            false -> addSuite and subFormula.repairT2F(bindNew, patternMap, lk)
+            true -> addSuite and subFormula.repairT2F(bindNew, patternMap, lk)
+            false -> addSuite
         }
 
         val repairSuite = revertSuite or newCtxSuite
@@ -57,10 +57,29 @@ data class ForallFormula(
         val repairSeqs = filteredPattern.filterNot { subFormula.evaluate(bind(assignment, variable, it), patternMap) }.map {
             val removalSeq = sequenceOf(RepairCase(RemovalRepairAction(it, pattern), weight))
             val revertSeq = subFormula.repairF2TSeq(bind(assignment, variable, it), patternMap, lk)
+//            if (revertSeq.first().isConflicting())
+//                chain(removalSeq, revertSeq)
             chain(revertSeq, removalSeq)
         }
+        val results = cartesianProduct(repairSeqs)
 
-        return filterImmutable(userConfig, manager, cartesianProduct(repairSeqs))
+        return filterImmutable(userConfig, manager, results)
+    }
+
+    override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return emptySequence()
+        val newContext = manager?.constructContext(mapOf("name" to "new")) ?: makeContext(mapOf())
+
+        val revertSeq = filteredPattern.map { subFormula.repairT2FSeq(bind(assignment, variable, it), patternMap, lk) }
+        val addSeq = sequenceOf(RepairCase(AdditionRepairAction(newContext, pattern), weight))
+        val bindNew = bind(assignment, variable, newContext)
+        val newCtxSeq = when (subFormula.evaluate(bindNew, patternMap)) {
+            true -> cartesianProduct(addSeq, subFormula.repairT2FSeq(bindNew, patternMap, lk))
+            false -> addSeq
+        }
+
+        val repairSeq = chain(chain(revertSeq), newCtxSeq)
+        return filterImmutable(userConfig, manager, repairSeq)
     }
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =

@@ -92,6 +92,12 @@ data class AndFormula(
         }
         TODO("Lock repair not implemented for AndFormula")
     }
+
+    override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
+        val leftSeq = left.repairT2FSeq(assignment, patternMap, lk)
+        val rightSeq = right.repairT2FSeq(assignment, patternMap, lk)
+        return chain(leftSeq, rightSeq)
+    }
 }
 
 fun fromCCFormulaAnd(fml: FAnd, manager: ContextManager?) = AndFormula(

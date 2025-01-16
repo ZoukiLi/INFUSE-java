@@ -16,6 +16,7 @@ interface IFormula {
     fun repairNodeT2F(rctNode: RCTNode, lk: Boolean = false): RepairSuite
 
     fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean = false): Sequence<RepairCase>
+    fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean = false): Sequence<RepairCase>
 }
 
 fun fromCCFormula(fml: Formula, manager: ContextManager?) : IFormula = when(fml) {

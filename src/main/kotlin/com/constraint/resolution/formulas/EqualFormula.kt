@@ -68,6 +68,12 @@ data class EqualFormula(
         val rst = sequenceOf(RepairCase(action, weight))
         return filterImmutable(disableConfigItems, manager, rst)
     }
+
+    override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
+        val action = DifferentiationRepairAction(assignment.getValue(var1), attr1, assignment.getValue(var2), attr2)
+        val rst = sequenceOf(RepairCase(action, weight))
+        return filterImmutable(disableConfigItems, manager, rst)
+    }
 }
 
 data class EqualConstFormula(val var1: Variable, val attr1: String, val value: String, val weight: Double = 1.0,
@@ -126,6 +132,12 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
 
     override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         val action = EqualizationConstRepairAction(assignment.getValue(var1), attr1, value)
+        val rst = sequenceOf(RepairCase(action, weight))
+        return filterImmutable(disableConfigItems, manager, rst)
+    }
+
+    override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
+        val action = DifferentiationConstRepairAction(assignment.getValue(var1), attr1, value)
         val rst = sequenceOf(RepairCase(action, weight))
         return filterImmutable(disableConfigItems, manager, rst)
     }

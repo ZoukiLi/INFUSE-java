@@ -1,0 +1,36 @@
+<rules>
+<!--    <rule>-->
+<!--        <id>rule_nested</id>-->
+<!--        <formula>-->
+<!--            <forall var="a" in="A">-->
+<!--                <forall var="b" in="B">-->
+<!--                    <and>-->
+<!--                        <bfunc name="equal_const_x_0">-->
+<!--                            <param pos="var1" var="a"/>-->
+<!--                        </bfunc>-->
+<!--                        <bfunc name="equal_const_x_0">-->
+<!--                            <param pos="var1" var="b"/>-->
+<!--                        </bfunc>-->
+<!--                    </and>-->
+<!--                </forall>-->
+<!--            </forall>-->
+<!--        </formula>-->
+<!--    </rule>-->
+    <rule>
+        <id>rule_nested_non-updatable</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B" non-updatable="B">
+                    <and non-updatable="B">
+                        <bfunc name="equal_const_x_0">
+                            <param pos="var1" var="a"/>
+                        </bfunc>
+                        <bfunc name="equal_const_x_0" non-updatable="B">
+                            <param pos="var1" var="b"/>
+                        </bfunc>
+                    </and>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+</rules>

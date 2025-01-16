@@ -65,6 +65,19 @@ data class ExistsFormula(
         return filterImmutable(userConfig, manager, repairSeq)
     }
 
+    override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return emptySequence()
+
+        val repairSeqs = filteredPattern.filter { subFormula.evaluate(bind(assignment, variable, it), patternMap) }.map {
+            val removalSeq = sequenceOf(RepairCase(RemovalRepairAction(it, pattern), weight))
+            val revertSeq = subFormula.repairT2FSeq(bind(assignment, variable, it), patternMap, lk)
+            chain(revertSeq, removalSeq)
+        }
+        val results = cartesianProduct(repairSeqs)
+
+        return filterImmutable(userConfig, manager, results)
+    }
+
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
         RCTNode(this, assignment, patternMap, ccRtNode)
 

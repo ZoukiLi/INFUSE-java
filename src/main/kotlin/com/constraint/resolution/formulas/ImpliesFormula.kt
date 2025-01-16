@@ -40,7 +40,27 @@ data class ImpliesFormula(
     }
 
     override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
-        TODO("Not yet implemented")
+        val leftSeq = left.repairT2FSeq(assignment, patternMap, lk)
+        val rightSeq = right.repairF2TSeq(assignment, patternMap, lk)
+        return chain(leftSeq, rightSeq)
+    }
+
+    override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
+        if (!lk) {
+            val leftTruth = left.evaluate(assignment, patternMap)
+            val rightTruth = right.evaluate(assignment, patternMap)
+            val result = when (leftTruth to rightTruth) {
+                true to true -> right.repairT2FSeq(assignment, patternMap, lk)
+                false to true -> cartesianProduct(
+                    left.repairF2TSeq(assignment, patternMap, lk),
+                    right.repairT2FSeq(assignment, patternMap, lk)
+                )
+                false to false -> left.repairF2TSeq(assignment, patternMap, lk)
+                else -> sequenceOf()
+            }
+            return filterImmutable(userConfig, manager, result)
+        }
+        TODO("Locked repairs not implemented for ImpliesFormula")
     }
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =

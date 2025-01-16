@@ -190,6 +190,18 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
     fun reverse(manager: ContextManager) =
         actions.sortedByDescending { it.repairType() }.flatMap { it.reverse(manager) }
 
+    override fun hashCode(): Int {
+        var hasher = 0
+        actions.forEach { hasher = hasher xor it.hashCode() xor it.repairType().hashCode() }
+        return hasher
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other !is RepairCase) {
+            return false
+        }
+        return actions == other.actions && weight == other.weight
+    }
     constructor(action: RepairAction, weight: Double) : this(setOf(action), weight)
 }
 

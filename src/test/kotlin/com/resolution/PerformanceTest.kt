@@ -10,6 +10,7 @@ import java.io.File
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.time.toKotlinDuration
+import kotlinx.coroutines.*
 
 // Simple performance test to compare the performance
 // Data like:
@@ -42,7 +43,7 @@ class PerformanceTest {
         }
     }
 
-    private val testSizes = (8..12 step 2) + (20..120 step 20)
+    private val testSizes = (2..18 step 2) + (20..120 step 20)
 
     @Test
     fun genData() {
@@ -116,35 +117,61 @@ class PerformanceTest {
 
             resultFile.appendText("--- Test data: data_${size} ---\n")
             val skipRules = maxSize.filter { it.value <= size }.keys
-            val oom1 = performanceTest("data_${size}", resultFile, skipRules)
+            val skipRules2 = maxSize2.filter { it.value <= size }.keys
+            val result = performanceTest("data_${size}", resultFile, skipRules, skipRules2)
+            val oom1 = result.first
+            val tmo1 = result.second
             oom1.forEach {
                 maxSize[it] = size
+            }
+            tmo1.forEach {
+                maxSize2[it] = size
             }
             resultFile.appendText("\n")
 
             resultFile.appendText("--- Test data: data_${size}(one_side) ---\n")
             val skipRulesOneSide = maxSizeOneSide.filter { it.value <= size }.keys
-            val oom2 = performanceTest("data_${size}_one_side", resultFile, skipRulesOneSide)
+            val skipRulesOneSide2 = maxSizeOneSide2.filter { it.value <= size }.keys
+            val result2 = performanceTest("data_${size}_one_side", resultFile, skipRulesOneSide, skipRulesOneSide2)
+            val oom2 = result2.first
+            val tmo2 = result2.second
             oom2.forEach {
                 maxSizeOneSide[it] = size
+            }
+            tmo2.forEach {
+                maxSizeOneSide2[it] = size
             }
         }
         println("Max size:")
         maxSize.toList().sortedBy { it.first }.forEach {
-            println("${it.first} to ${it.second}")
+            println("${it.first} to ${it.second},")
         }
         println("Max size (one side):")
         maxSizeOneSide.toList().sortedBy { it.first }.forEach {
-            println("${it.first} to ${it.second}")
+            println("${it.first} to ${it.second},")
         }
     }
 
-    private val maxSize: MutableMap<String, Int> = mutableMapOf()
+    private val maxSize: MutableMap<String, Int> = mutableMapOf(
+        "rule_nested" to 12,
+    )
+    private val maxSize2: MutableMap<String, Int> = mutableMapOf()
     private val maxSizeOneSide: MutableMap<String, Int> = mutableMapOf()
+    private val maxSizeOneSide2: MutableMap<String, Int> = mutableMapOf()
 
-    fun performanceTest(testData: String, resultFile: File, skipRules: Set<String>): Set<String> {
+    fun performanceTest(testData: String, resultFile: File, skipRules1: Set<String>, skipRules2: Set<String>): Pair<Set<String>, Set<String>> {
         println("Test data: $testData")
-        resultFile.appendText("rule,\tsize(recursive),\tsize(lazy),\ttime(recursive),\ttime(lazy)\n")
+        resultFile.appendText(
+            String.format(
+                "%-26s%-16s%-11s%-16s%-11s\n",
+                "rule",
+                "size(collected)",
+                "size(lazy)",
+                "time(collected)",
+                "time(lazy)"
+            )
+        )
+//        resultFile.appendText("rule,\tsize(recursive),\tsize(lazy),\ttime(recursive),\ttime(lazy)\n")
 
         val fmlPath = "${testDir}/formula.xml"
         val ruleHandler = RuleHandler()
@@ -162,37 +189,64 @@ class PerformanceTest {
         }
 
         val oomRules = mutableSetOf<String>()
+        val timeout = 20*60*1000L
+        val tmoRules = mutableSetOf<String>()
         checker.ruleHandler.ruleMap
-            .filterNot { skipRules.contains(it.key) }
-            .toList().sortedBy { pair -> pair.first }.forEach {
+            .toList().sortedBy { it.first }.forEach {
                 println("Repairing rule: ${it.first}")
                 val formula = fromCCFormula(it.second.formula, manager)
                 val cctNode = it.second.cctRoot
                 val data = manager.patternMap
                 val node = formula.createRCTNode(mapOf(), data, cctNode)
-                var size = 0
-                var size2 = 0
-                try {
-                    val t1 = measureTime("Repair time (tree)") {
-                        // val result = node.repairF2T()
-                        // size = result.cases.size
-                    }
-                    val t2 = measureTime("Repair time (recursive)") {
-                        val r2 = formula.repairF2T(mapOf(), data)
-                        size = r2.cases.count()
-                    }
-                    val t3 = measureTime("Repair time (lazy)") {
-                        val r3 = formula.repairF2TSeq(mapOf(), data)
-                        size2 = r3.count()
-                    }
-                    resultFile.appendText("${it.first},\t$size,\t$size2,\t$t2,\t$t3\n")
-                } catch (e: OutOfMemoryError) {
-                    oomRules.add(it.first)
-                    println("Out of memory: $e")
-                    resultFile.appendText("${it.first},\t$size,\t$size2,\tOOM,\tOOM\n")
+                var size = -1
+                var size2 = -1
+                var t1 = measureTime("Repair time (tree)") {
+                    // val result = node.repairF2T()
+                    // size = result.cases.size
                 }
+                var t2 = -1L
+                if (!skipRules1.contains(it.first)) {
+                    t2 = measureTimeWithTimeout("Repair time (recursive)", timeout) {
+                        try {
+                            val r2 = formula.repairF2T(mapOf(), data)
+                            size = r2.cases.count()
+                        } catch (e: OutOfMemoryError) {
+                            println("Out of memory: $e")
+                            oomRules.add(it.first)
+                        }
+                    }
+                    if (size == -1) {
+                        t2 = -1
+                    }
+                }
+                var t3 = -1L
+                if (!skipRules2.contains(it.first)) {
+                    t3 = measureTimeWithTimeout("Repair time (lazy)", timeout) {
+                        try {
+                            val r3 = formula.repairF2TSeq(mapOf(), data)
+                            size2 = r3.count()
+                        } catch (e: OutOfMemoryError) {
+                            println("Out of memory: $e")
+                            oomRules.add(it.first)
+                        }
+                    }
+                }
+                if (t3 == timeout) {
+                    tmoRules.add(it.first)
+                    t3 = -1
+                }
+                resultFile.appendText(
+                    String.format(
+                        "%-26s%-16s%-11s%-16s%-11s\n",
+                        it.first,
+                        size,
+                        size2,
+                        t2,
+                        t3
+                    )
+                )
             }
-        return oomRules
+        return oomRules to tmoRules
     }
 
     private fun displayTime(start: Long, end: Long, message: String) {
@@ -208,4 +262,42 @@ class PerformanceTest {
         displayTime(start, end, description)
         return end - start
     }
+    // Measure time with timeout
+    private fun measureTimeWithTimeoutCoroutine(
+        description: String,
+        timeoutMillis: Long,
+        block: suspend () -> Unit
+    ): Long {
+        var result = 0L
+        val start = System.currentTimeMillis()
+        runBlocking {
+            try {
+                withTimeout(timeoutMillis) {
+                    block()
+                }
+            } catch (e: TimeoutCancellationException) {
+                println("Function exceeded $timeoutMillis ms: $description")
+            }
+        }
+        val end = System.currentTimeMillis()
+        displayTime(start, end, description)
+        result = end - start
+        return result
+    }
+    fun measureTimeWithTimeout(description: String, timeoutMillis: Long, block: () -> Unit): Long {
+        val start = System.currentTimeMillis()
+        val thread = Thread {
+            block()
+        }
+        thread.start()
+        thread.join(timeoutMillis)
+        if (thread.isAlive) {
+            thread.interrupt()
+            println("Function exceeded $timeoutMillis ms: $description")
+        }
+        val end = System.currentTimeMillis()
+        displayTime(start, end, description)
+        return end - start
+    }
+
 }
