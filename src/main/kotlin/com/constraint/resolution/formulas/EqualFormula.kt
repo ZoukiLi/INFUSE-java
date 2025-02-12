@@ -74,6 +74,21 @@ data class EqualFormula(
         val rst = sequenceOf(RepairCase(action, weight))
         return filterImmutable(disableConfigItems, manager, rst)
     }
+
+    override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
+        TODO("Not yet implemented")
+    }
+
+    override fun applyCaseToVerifyNode(
+        verifyNode: VerifyNode,
+        repairCase: RepairCase
+    ) {
+        TODO("Not yet implemented")
+    }
+
+    override fun evalVerifyNode(verifyNode: VerifyNode): Boolean {
+        TODO("Not yet implemented")
+    }
 }
 
 data class EqualConstFormula(val var1: Variable, val attr1: String, val value: String, val weight: Double = 1.0,
@@ -140,6 +155,28 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
         val action = DifferentiationConstRepairAction(assignment.getValue(var1), attr1, value)
         val rst = sequenceOf(RepairCase(action, weight))
         return filterImmutable(disableConfigItems, manager, rst)
+    }
+
+    override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
+        ccRtNode.verifyNode?.let { return it }
+        val verifyNode = VerifyNode(this, ccRtNode)
+        ccRtNode.verifyNode = verifyNode
+        return verifyNode
+    }
+
+    override fun applyCaseToVerifyNode(
+        verifyNode: VerifyNode,
+        repairCase: RepairCase
+    ) {
+        // just do nothing
+    }
+
+    override fun evalVerifyNode(verifyNode: VerifyNode): Boolean {
+        verifyNode.unaffectedTruth()?.let { return it }
+        val varEnv = verifyNode.ccRtNode?.varEnv ?: verifyNode.varEnv
+        val value1 = varEnv?.get(var1)?.ctx_fields?.get(attr1) ?: return false
+        val result = value1 == value
+        return result
     }
 }
 

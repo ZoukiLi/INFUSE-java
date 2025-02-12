@@ -9,8 +9,10 @@ import com.CC.Contexts.ContextChange
 import com.CC.Contexts.ContextPool
 import com.CC.Middleware.Checkers.Checker
 import com.CC.Middleware.Checkers.PCC
+import com.constraint.resolution.Context
 import com.constraint.resolution.ContextManager
 import com.constraint.resolution.IFormula
+import com.constraint.resolution.RemovalRepairAction
 import com.constraint.resolution.RepairCase
 import com.constraint.resolution.RepairSuite
 import com.constraint.resolution.fromCCFormula
@@ -20,11 +22,11 @@ import kotlin.test.Test
 
 private const val testDir = "src/test/resources/FunctionalTest/"
 
-class FunctionalTestConfig(val subDir: String) {
+class FunctionalTestConfig(val subDir: String, val baseDir: String = testDir) {
     lateinit var checker: Checker
     lateinit var formulaMap: Map<String, IFormula>
     val manager = ContextManager()
-    val resultFile = File("${testDir}${subDir}/results.txt")
+    val resultFile = File("${baseDir}${subDir}/results.txt")
 
     // Bfunc Object
     object DefaultBfunc {
@@ -48,7 +50,7 @@ class FunctionalTestConfig(val subDir: String) {
     }
 
     fun setupChecker() {
-        val fmlPath = "${testDir}${subDir}/formula.xml"
+        val fmlPath = "${baseDir}${subDir}/formula.xml"
         val ruleHandler = RuleHandler()
         ruleHandler.buildRules(fmlPath)
         val pool = initPool(ruleHandler)
@@ -73,7 +75,7 @@ class FunctionalTestConfig(val subDir: String) {
         // pattern,attribute1,attribute2,attribute3
         // A,value1,value2,value3
         // A,value4,value5,value6
-        val dataFile = File("${testDir}${subDir}/data.csv")
+        val dataFile = File("${baseDir}${subDir}/data.csv")
         val lines = dataFile.readLines()
         val header = lines[0].split(",")
         val patIndex = header.indexOf("pattern")
@@ -84,8 +86,15 @@ class FunctionalTestConfig(val subDir: String) {
             val pattern = values[patIndex]
             val attributes = attrIndices.associate { header[it] to values[it] }
             val context = manager.constructContext(attributes)
+            nameToContext.put(context.attributes["name"]?.first?:"", context)
             manager.addContextToPattern(context, listOf(pattern))
         }
+    }
+
+    val nameToContext = mutableMapOf<String, Context>()
+
+    fun context(name: String): Context {
+        return nameToContext[name] ?: throw IllegalArgumentException("Context not found: $name")
     }
 
     fun applyChange(change: ContextChange) {
@@ -190,6 +199,30 @@ class FunctionalTest {
     @Test
     fun test_tree() {
         test_formula("tree")
+    }
+
+    @Test
+    fun testVerifyNode() {
+        val test = FunctionalTestConfig("verify")
+
+        test.setupChecker()
+        test.readCSVPatterns().forEach { test.applyChange(it) }
+
+        println(test.nameToContext)
+        val cases = listOf(
+            RepairCase(RemovalRepairAction(test.context("a1"), "A"), .0),
+            RepairCase(setOf(RemovalRepairAction(test.context("a2"), "A"), RemovalRepairAction(test.context("a3"), "A")), .0),
+            RepairCase(setOf(RemovalRepairAction(test.context("a1"), "A"), RemovalRepairAction(test.context("a4"), "A")), .0),
+        )
+        test.checker.ruleHandler.ruleMap.forEach {
+            val formula = test.formulaMap[it.key] ?: throw IllegalArgumentException("Rule not found: ${it.key}")
+            val cctNode = it.value.cctRoot
+            val verifyNode = formula.initVerifyNode(cctNode)
+            println("Rule: ${it.key}")
+            cases.forEachIndexed { i, case ->
+                println("Case $i: ${verifyNode.checkCase(case)}")
+            }
+        }
     }
 
     fun test_formula(name: String) {

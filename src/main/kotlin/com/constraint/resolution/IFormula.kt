@@ -17,6 +17,11 @@ interface IFormula {
 
     fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean = false): Sequence<RepairCase>
     fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean = false): Sequence<RepairCase>
+
+    fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode
+    fun applyCaseToVerifyNode(verifyNode: VerifyNode, repairCase: RepairCase)
+    fun evalVerifyNode(verifyNode: VerifyNode): Boolean
+
 }
 
 fun fromCCFormula(fml: Formula, manager: ContextManager?) : IFormula = when(fml) {

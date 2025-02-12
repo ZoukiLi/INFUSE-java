@@ -5,6 +5,7 @@ import com.CC.Constraints.Formulas.FExists;
 import com.CC.Constraints.Formulas.FForall;
 import com.CC.Constraints.Formulas.Formula;
 import com.CC.Contexts.Context;
+import com.constraint.resolution.VerifyNode;
 
 import java.util.*;
 
@@ -29,6 +30,17 @@ public class RuntimeNode {
     private RuntimeNode parent;
     private final HashMap<Context, Virtual_Truth_Type> kidsVT; //only for forall and exists
 
+    // for resolution
+    private VerifyNode verifyNode;
+
+    public VerifyNode getVerifyNode() {
+        return verifyNode;
+    }
+
+    public void setVerifyNode(VerifyNode verifyNode) {
+        this.verifyNode = verifyNode;
+    }
+
     //constructor
     public RuntimeNode(Formula formula){
         //need to create a new formula
@@ -39,6 +51,7 @@ public class RuntimeNode {
         this.parent = null;
         this.kidsVT = new HashMap<>();
         this.links = new HashSet<>();
+        this.verifyNode = null;
         if(formula.getFormula_type() == Formula.Formula_Type.FORALL){
             this.setTruth(true);
             this.setOptTruth(true);

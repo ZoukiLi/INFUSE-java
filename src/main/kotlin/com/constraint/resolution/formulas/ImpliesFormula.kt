@@ -63,6 +63,21 @@ data class ImpliesFormula(
         TODO("Locked repairs not implemented for ImpliesFormula")
     }
 
+    override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
+        TODO("Not yet implemented")
+    }
+
+    override fun applyCaseToVerifyNode(
+        verifyNode: VerifyNode,
+        repairCase: RepairCase
+    ) {
+        TODO("Not yet implemented")
+    }
+
+    override fun evalVerifyNode(verifyNode: VerifyNode): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
         RCTNode(this, assignment, patternMap, ccRtNode)
 

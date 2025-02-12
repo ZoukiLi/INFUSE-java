@@ -300,4 +300,19 @@ class PerformanceTest {
         return end - start
     }
 
+    @Test
+    fun testRepairSeq() {
+        testSizes.forEach { size ->
+            val testConfig = FunctionalTestConfig("data_${size}")
+            testConfig.setupChecker()
+            testConfig.readCSVPatterns().forEach { testConfig.applyChange(it) }
+            
+            testConfig.checker.ruleHandler.ruleMap.forEach { ruleEntry ->
+                val ruleName = ruleEntry.key
+                val repairSeq = testConfig.repairRuleSeq(ruleName)
+                testConfig.applyRepair(ruleName, repairSeq)
+            }
+        }
+    }
+
 }

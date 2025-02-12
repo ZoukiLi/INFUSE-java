@@ -1,0 +1,13 @@
+<rules>
+    <rule>
+        <id>rule1</id>
+        <formula>
+            <forall var="a" in="A">
+                <bfunc name="equal_const_x_0">
+                    <!--a.x == 0-->
+                    <param pos="var1" var="a"/>
+                </bfunc>
+            </forall>
+        </formula>
+    </rule>
+</rules>

@@ -21,6 +21,7 @@ interface RepairAction {
     fun reverse(manager: ContextManager): List<ContextChange>
     fun applyTo(manager: ContextManager): List<ContextChange>
     fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager): Boolean
+    fun inPattern(patternName: String, manager: ContextManager): Boolean
 }
 
 data class AdditionRepairAction(val context: Context, val patternName: String) : RepairAction {
@@ -37,6 +38,8 @@ data class AdditionRepairAction(val context: Context, val patternName: String) :
 
     override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
         userConfig.repairType == repairType() && userConfig.patternName == patternName
+
+    override fun inPattern(patternName: String, manager: ContextManager) = this.patternName == patternName
 }
 
 data class RemovalRepairAction(val context: Context, val patternName: String) : RepairAction {
@@ -52,6 +55,8 @@ data class RemovalRepairAction(val context: Context, val patternName: String) : 
 
     override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
         userConfig.repairType == repairType() && userConfig.patternName == patternName
+
+    override fun inPattern(patternName: String, manager: ContextManager) = this.patternName == patternName
 }
 
 data class EqualizationRepairAction(
@@ -71,6 +76,9 @@ data class EqualizationRepairAction(
 
     override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
         userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
+
+    override fun inPattern(patternName: String, manager: ContextManager) =
+        manager.patternsOf(context1).contains(patternName) || manager.patternsOf(context2).contains(patternName)
 }
 
 data class EqualizationConstRepairAction(
@@ -89,6 +97,8 @@ data class EqualizationConstRepairAction(
 
     override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
         userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
+
+    override fun inPattern(patternName: String, manager: ContextManager) = manager.patternsOf(context1).contains(patternName)
 }
 
 data class DifferentiationRepairAction(
@@ -108,6 +118,9 @@ data class DifferentiationRepairAction(
 
     override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
         userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
+
+    override fun inPattern(patternName: String, manager: ContextManager) =
+        manager.patternsOf(context1).contains(patternName) || manager.patternsOf(context2).contains(patternName)
 }
 
 data class DifferentiationConstRepairAction(
@@ -126,6 +139,8 @@ data class DifferentiationConstRepairAction(
 
     override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
         userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
+
+    override fun inPattern(patternName: String, manager: ContextManager) = manager.patternsOf(context1).contains(patternName)
 }
 
 typealias Attribute = Pair<Context, String>

@@ -3,7 +3,7 @@
         <id>rule1</id>
         <formula>
             <forall var="a" in="A">
-                <forall var="b" in="B">
+                <forall var="b" in="B" non-updatable="B">
                     <implies>
                         <bfunc name="equal_z_z">
                             <param pos="var1" var="a"/>

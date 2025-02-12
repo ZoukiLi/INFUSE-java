@@ -2,6 +2,7 @@ package com.constraint.resolution.formulas
 
 import com.CC.Constraints.Formulas.FForall
 import com.CC.Constraints.Runtime.RuntimeNode
+import com.CC.Contexts.Context
 import com.constraint.resolution.*
 
 data class ForallFormula(
@@ -80,6 +81,61 @@ data class ForallFormula(
 
         val repairSeq = chain(chain(revertSeq), newCtxSeq)
         return filterImmutable(userConfig, manager, repairSeq)
+    }
+
+    override fun initVerifyNode(
+        ccRtNode: RuntimeNode
+    ): VerifyNode {
+        if (ccRtNode.verifyNode != null) {
+            return ccRtNode.verifyNode
+        }
+        val node = VerifyNode(this, ccRtNode)
+        ccRtNode.verifyNode = node
+        ccRtNode.children.forEach {
+            subFormula.initVerifyNode(it)
+        }
+        return node
+    }
+
+    override fun applyCaseToVerifyNode(verifyNode: VerifyNode, repairCase: RepairCase) {
+        // if there are actions that factors this formula, apply them
+        if (manager == null) {
+            return
+        }
+        repairCase.actions.filter { it.inPattern(pattern, manager) }.forEach {
+            when (it) {
+                is AdditionRepairAction -> {
+                    val ccContext = it.context.ccContext!!
+                    val varEnv = verifyNode.ccRtNode?.varEnv ?: verifyNode.varEnv
+                    val binding = variable to ccContext
+                    val bindVarEnv = varEnv?.plus(binding) ?: mapOf(binding)
+                    val newNode = VerifyNode(subFormula)
+                    newNode.varEnv = bindVarEnv
+                    newNode.affected = true
+                    verifyNode.newChildren.add(newNode)
+                }
+
+                is RemovalRepairAction -> {
+                    val ccContext = it.context.ccContext!!
+                    verifyNode.ccRtNode?.children?.filter { it.varEnv[variable] == ccContext }?.forEach {
+                        it.verifyNode?.valid = false
+                    }
+                }
+            }
+        }
+        // pass the case down
+        verifyNode.getValidChildren().forEach {
+            subFormula.applyCaseToVerifyNode(it, repairCase)
+        }
+    }
+
+    override fun evalVerifyNode(verifyNode: VerifyNode): Boolean {
+        verifyNode.unaffectedTruth()?.let { return it }
+        val children = verifyNode.getValidChildren()
+        val result = children.all { subFormula.evalVerifyNode(it) }
+        verifyNode.truth = result
+        verifyNode.affected = false
+        return result
     }
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
