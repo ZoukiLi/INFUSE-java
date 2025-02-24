@@ -59,18 +59,35 @@ data class OrFormula(
     }
 
     override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
-        TODO("Not yet implemented")
+        if (ccRtNode.verifyNode != null) {
+            return ccRtNode.verifyNode
+        }
+        val node = VerifyNode(this, ccRtNode)
+        ccRtNode.verifyNode = node
+        left.initVerifyNode(ccRtNode.children[0])
+        right.initVerifyNode(ccRtNode.children[1])
+        return node
     }
 
     override fun applyCaseToVerifyNode(
         verifyNode: VerifyNode,
         repairCase: RepairCase
     ) {
-        TODO("Not yet implemented")
+        // pass the repair case to the branched formulas
+        val childLeft = verifyNode.getChild(0)
+        val childRight = verifyNode.getChild(1)
+        childLeft?.let { left.applyCaseToVerifyNode(it, repairCase) }
+        childRight?.let { right.applyCaseToVerifyNode(it, repairCase) }
     }
 
     override fun evalVerifyNode(verifyNode: VerifyNode): Boolean {
-        TODO("Not yet implemented")
+        verifyNode.unaffectedTruth()?.let { return it }
+        val childLeft = verifyNode.getChild(0)?.let { left.evalVerifyNode(it) } == true
+        val childRight = verifyNode.getChild(1)?.let { right.evalVerifyNode(it) } == true
+        val result = childLeft || childRight
+        verifyNode.truth = result
+        verifyNode.affected = false
+        return result
     }
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =

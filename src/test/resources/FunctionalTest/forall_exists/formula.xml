@@ -1,0 +1,29 @@
+<rules>
+    <rule>
+        <id>rule_for_A</id>
+        <formula>
+            <forall var="a" in="A">
+                <not>
+                    <bfunc name="equal_const_y_0">
+                        <!--a.y != 0-->
+                        <param pos="var1" var="a"/>
+                    </bfunc>
+                </not>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_for_B</id>
+        <formula>
+            <forall var="b" in="B">
+                <exists var="a" in="A">
+                    <bfunc name="equal_y_y">
+                        <!--a.y == b.y-->
+                        <param pos="var1" var="a"/>
+                        <param pos="var2" var="b"/>
+                    </bfunc>
+                </exists>
+            </forall>
+        </formula>
+    </rule>
+</rules>

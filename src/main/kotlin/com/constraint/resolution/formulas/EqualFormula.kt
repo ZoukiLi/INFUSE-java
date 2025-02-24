@@ -65,29 +65,39 @@ data class EqualFormula(
 
     override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         val action = EqualizationRepairAction(assignment.getValue(var1), attr1, assignment.getValue(var2), attr2)
-        val rst = sequenceOf(RepairCase(action, weight))
+        val action2 = EqualizationRepairAction(assignment.getValue(var2), attr2, assignment.getValue(var1), attr1)
+        val rst = sequenceOf(RepairCase(action, weight), RepairCase(action2, weight))
         return filterImmutable(disableConfigItems, manager, rst)
     }
 
     override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         val action = DifferentiationRepairAction(assignment.getValue(var1), attr1, assignment.getValue(var2), attr2)
-        val rst = sequenceOf(RepairCase(action, weight))
+        val action2 = DifferentiationRepairAction(assignment.getValue(var2), attr2, assignment.getValue(var1), attr1)
+        val rst = sequenceOf(RepairCase(action, weight), RepairCase(action2, weight))
         return filterImmutable(disableConfigItems, manager, rst)
     }
 
     override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
-        TODO("Not yet implemented")
+        ccRtNode.verifyNode?.let { return it }
+        val verifyNode = VerifyNode(this, ccRtNode)
+        ccRtNode.verifyNode = verifyNode
+        return verifyNode
     }
 
     override fun applyCaseToVerifyNode(
         verifyNode: VerifyNode,
         repairCase: RepairCase
     ) {
-        TODO("Not yet implemented")
+        // just do nothing
     }
 
     override fun evalVerifyNode(verifyNode: VerifyNode): Boolean {
-        TODO("Not yet implemented")
+        verifyNode.unaffectedTruth()?.let { return it }
+        val varEnv = verifyNode.ccRtNode?.varEnv ?: verifyNode.varEnv
+        val value1 = varEnv?.get(var1)?.ctx_fields?.get(attr1) ?: return false
+        val value2 = varEnv?.get(var2)?.ctx_fields?.get(attr2) ?: return false
+        val result = value1 == value2
+        return result
     }
 }
 

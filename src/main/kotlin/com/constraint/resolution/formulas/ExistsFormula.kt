@@ -79,18 +79,58 @@ data class ExistsFormula(
     }
 
     override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
-        TODO("Not yet implemented")
+        if (ccRtNode.verifyNode != null) {
+            return ccRtNode.verifyNode
+        }
+        val node = VerifyNode(this, ccRtNode)
+        ccRtNode.verifyNode = node
+        ccRtNode.children.forEach {
+            subFormula.initVerifyNode(it)
+        }
+        return node
     }
 
     override fun applyCaseToVerifyNode(
         verifyNode: VerifyNode,
         repairCase: RepairCase
     ) {
-        TODO("Not yet implemented")
+        if (manager == null) {
+            return
+        }
+        repairCase.actions.filter { it.inPattern(pattern, manager) }.forEach {
+            when (it) {
+                is AdditionRepairAction -> {
+                    val ccContext = it.context.ccContext!!
+                    val varEnv = verifyNode.ccRtNode?.varEnv ?: verifyNode.varEnv
+                    val binding = variable to ccContext
+                    val newEnv = varEnv?.plus(binding) ?: mapOf(binding)
+                    val newNode = VerifyNode(subFormula)
+                    newNode.varEnv = newEnv
+                    newNode.affected = true
+                    verifyNode.newChildren.add(newNode)
+                }
+
+                is RemovalRepairAction -> {
+                    val ccContext = it.context.ccContext!!
+                    verifyNode.ccRtNode?.children?.filter { it.varEnv[variable] == ccContext }?.forEach {
+                        it.verifyNode?.valid = false
+                    }
+                }
+            }
+        }
+        // pass the repair case to the branched formulas
+        verifyNode.getValidChildren().forEach {
+            subFormula.applyCaseToVerifyNode(it, repairCase)
+        }
     }
 
     override fun evalVerifyNode(verifyNode: VerifyNode): Boolean {
-        TODO("Not yet implemented")
+        verifyNode.unaffectedTruth()?.let { return it }
+        val childrenResults = verifyNode.getValidChildren().map { subFormula.evalVerifyNode(it) }
+        val result = childrenResults.any { it }
+        verifyNode.truth = result
+        verifyNode.affected = false
+        return result
     }
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =

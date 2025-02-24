@@ -2,7 +2,6 @@ package com.constraint.resolution.formulas
 
 import com.CC.Constraints.Formulas.FForall
 import com.CC.Constraints.Runtime.RuntimeNode
-import com.CC.Contexts.Context
 import com.constraint.resolution.*
 
 data class ForallFormula(
@@ -131,8 +130,8 @@ data class ForallFormula(
 
     override fun evalVerifyNode(verifyNode: VerifyNode): Boolean {
         verifyNode.unaffectedTruth()?.let { return it }
-        val children = verifyNode.getValidChildren()
-        val result = children.all { subFormula.evalVerifyNode(it) }
+        val childrenResults = verifyNode.getValidChildren().map { subFormula.evalVerifyNode(it) }
+        val result = childrenResults.all { it }
         verifyNode.truth = result
         verifyNode.affected = false
         return result

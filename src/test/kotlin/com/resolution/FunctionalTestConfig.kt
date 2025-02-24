@@ -9,12 +9,14 @@ import com.CC.Contexts.ContextChange
 import com.CC.Contexts.ContextPool
 import com.CC.Middleware.Checkers.Checker
 import com.CC.Middleware.Checkers.PCC
+import com.constraint.resolution.AdditionRepairAction
 import com.constraint.resolution.Context
 import com.constraint.resolution.ContextManager
 import com.constraint.resolution.IFormula
 import com.constraint.resolution.RemovalRepairAction
 import com.constraint.resolution.RepairCase
 import com.constraint.resolution.RepairSuite
+import com.constraint.resolution.cartesianProduct
 import com.constraint.resolution.fromCCFormula
 import java.io.File
 import kotlin.test.Test
@@ -86,7 +88,7 @@ class FunctionalTestConfig(val subDir: String, val baseDir: String = testDir) {
             val pattern = values[patIndex]
             val attributes = attrIndices.associate { header[it] to values[it] }
             val context = manager.constructContext(attributes)
-            nameToContext.put(context.attributes["name"]?.first?:"", context)
+            nameToContext.put(context.attributes["name"]?.first ?: "", context)
             manager.addContextToPattern(context, listOf(pattern))
         }
     }
@@ -129,6 +131,20 @@ class FunctionalTestConfig(val subDir: String, val baseDir: String = testDir) {
         return formula.repairF2TSeq(mapOf(), manager.patternMap)
     }
 
+    fun tryApplyCase(ruleName: String, case: RepairCase): Boolean {
+        // apply changes and reverse changes
+        val applyChanges = case.applyTo(manager)
+        applyChanges.forEach {
+            checker.ctxChangeCheckIMD(it)
+        }
+        val truth = checker.ruleHandler.ruleMap[ruleName]?.cctRoot?.isTruth
+        val reverseChanges = case.reverse(manager)
+        reverseChanges.forEach {
+            checker.ctxChangeCheckIMD(it)
+        }
+        return truth == true
+    }
+
     fun applyRepair(ruleName: String, repairSuite: Sequence<RepairCase>) {
         resultFile.appendText("Rule: $ruleName\n")
 //        val tree = displayCCT(checker.ruleHandler.ruleMap[ruleName]?.cctRoot!!, null)
@@ -143,7 +159,7 @@ class FunctionalTestConfig(val subDir: String, val baseDir: String = testDir) {
             val applyChanges = case.applyTo(manager)
             applyChanges.forEach {
                 checker.ctxChangeCheckIMD(it)
-    //                resultFile.appendText("$it\n")
+                //                resultFile.appendText("$it\n")
             }
             // check evaluation
             val truth = checker.ruleHandler.ruleMap[ruleName]?.cctRoot?.isTruth
@@ -159,7 +175,7 @@ class FunctionalTestConfig(val subDir: String, val baseDir: String = testDir) {
             val reverseChanges = case.reverse(manager)
             reverseChanges.forEach {
                 checker.ctxChangeCheckIMD(it)
-    //                resultFile.appendText("$it\n")
+                //                resultFile.appendText("$it\n")
             }
             resultFile.appendText("----------\n")
             if (truth == true) {
@@ -209,18 +225,86 @@ class FunctionalTest {
         test.readCSVPatterns().forEach { test.applyChange(it) }
 
         println(test.nameToContext)
+        val newContext = test.manager.constructContext(mapOf("name" to "a5", "x" to "0"))
+        val newContext2 = test.manager.constructContext(mapOf("name" to "a6", "x" to "1"))
         val cases = listOf(
             RepairCase(RemovalRepairAction(test.context("a1"), "A"), .0),
-            RepairCase(setOf(RemovalRepairAction(test.context("a2"), "A"), RemovalRepairAction(test.context("a3"), "A")), .0),
-            RepairCase(setOf(RemovalRepairAction(test.context("a1"), "A"), RemovalRepairAction(test.context("a4"), "A")), .0),
+            RepairCase(
+                setOf(
+                    RemovalRepairAction(test.context("a2"), "A"),
+                    RemovalRepairAction(test.context("a3"), "A")
+                ), .0
+            ),
+            RepairCase(
+                setOf(
+                    RemovalRepairAction(test.context("a2"), "A"),
+                    RemovalRepairAction(test.context("a4"), "A")
+                ), .0
+            ),
+            RepairCase(
+                setOf(
+                    RemovalRepairAction(test.context("a1"), "A"),
+                    RemovalRepairAction(test.context("a4"), "A")
+                ), .0
+            ),
+            RepairCase(setOf(RemovalRepairAction(test.context("a1"), "A"), AdditionRepairAction(newContext, "A")), .0),
+            RepairCase(
+                setOf(
+                    RemovalRepairAction(test.context("a1"), "A"),
+                    RemovalRepairAction(test.context("a4"), "A"),
+                    AdditionRepairAction(newContext, "A")
+                ), .0
+            ),
+            RepairCase(
+                setOf(
+                    RemovalRepairAction(test.context("a1"), "A"),
+                    RemovalRepairAction(test.context("a4"), "A"),
+                    AdditionRepairAction(newContext2, "A")
+                ), .0
+            ),
         )
+        test.displayEvaluation()
         test.checker.ruleHandler.ruleMap.forEach {
             val formula = test.formulaMap[it.key] ?: throw IllegalArgumentException("Rule not found: ${it.key}")
             val cctNode = it.value.cctRoot
             val verifyNode = formula.initVerifyNode(cctNode)
             println("Rule: ${it.key}")
+            test.resultFile.appendText("Rule: ${it.key}\n")
             cases.forEachIndexed { i, case ->
                 println("Case $i: ${verifyNode.checkCase(case)}")
+                test.resultFile.appendText("Case $i: ${verifyNode.checkCase(case)}\n")
+            }
+        }
+    }
+
+    @Test
+    fun test_formula_relation() {
+        test_formula_relation("forall_exists")
+        test_formula_relation("forall_implies")
+    }
+
+    fun test_formula_relation(name: String) {
+        val test = FunctionalTestConfig(name)
+        test.setupChecker()
+        test.readCSVPatterns().forEach { test.applyChange(it) }
+        val casesForRules =
+            test.checker.ruleHandler.ruleMap.mapValues { rule ->
+                val cases = test.repairRuleSeq(rule.key)
+                cases.filter { test.tryApplyCase(rule.key, it) }
+            }
+        casesForRules.forEach { (ruleName, cases) ->
+            test.resultFile.appendText("Rule: $ruleName\n")
+            cases.forEachIndexed { i, case ->
+                test.resultFile.appendText("Case $i.\n")
+                test.resultFile.appendText("${case.display()}\n")
+            }
+        }
+        cartesianProduct(casesForRules.values.asSequence()).forEach { case ->
+            test.resultFile.appendText("\nTesting Repair Cases:\n")
+            test.resultFile.appendText("${case.display()}\n")
+            test.checker.ruleHandler.ruleMap.forEach {
+                val truth = test.tryApplyCase(it.key, case)
+                test.resultFile.appendText("${it.key}: $truth\n")
             }
         }
     }

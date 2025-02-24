@@ -78,7 +78,7 @@ data class EqualizationRepairAction(
         userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
 
     override fun inPattern(patternName: String, manager: ContextManager) =
-        manager.patternsOf(context1).contains(patternName) || manager.patternsOf(context2).contains(patternName)
+        manager.patternsOf(context1).contains(patternName)
 }
 
 data class EqualizationConstRepairAction(
@@ -120,7 +120,7 @@ data class DifferentiationRepairAction(
         userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
 
     override fun inPattern(patternName: String, manager: ContextManager) =
-        manager.patternsOf(context1).contains(patternName) || manager.patternsOf(context2).contains(patternName)
+        manager.patternsOf(context1).contains(patternName)
 }
 
 data class DifferentiationConstRepairAction(

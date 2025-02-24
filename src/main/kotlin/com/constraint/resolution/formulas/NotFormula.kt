@@ -26,18 +26,30 @@ data class NotFormula(
     }
 
     override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
-        TODO("Not yet implemented")
+        if (ccRtNode.verifyNode != null) {
+            return ccRtNode.verifyNode
+        }
+        val node = VerifyNode(this, ccRtNode)
+        ccRtNode.verifyNode = node
+        subFormula.initVerifyNode(ccRtNode.children.first())
+        return node
     }
 
     override fun applyCaseToVerifyNode(
         verifyNode: VerifyNode,
         repairCase: RepairCase
     ) {
-        TODO("Not yet implemented")
+        // pass the repair case to the child node
+        verifyNode.getChild(0)?.let { subFormula.applyCaseToVerifyNode(it, repairCase) }
     }
 
     override fun evalVerifyNode(verifyNode: VerifyNode): Boolean {
-        TODO("Not yet implemented")
+        verifyNode.unaffectedTruth()?.let { return it }
+        val child = verifyNode.getChild(0)?.let { subFormula.evalVerifyNode(it) } == true
+        val result = !child
+        verifyNode.truth = result
+        verifyNode.affected = false
+        return result
     }
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =

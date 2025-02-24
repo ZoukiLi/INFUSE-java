@@ -1,0 +1,34 @@
+<rules>
+    <rule>
+        <id>rule_A_x</id>
+        <formula>
+            <forall var="a" in="A">
+                <bfunc name="equal_const_x_1">
+                    <!--a.x != 0-->
+                    <param pos="var1" var="a"/>
+                </bfunc>
+            </forall>
+        </formula>
+    </rule>
+    <rule>
+        <id>rule_B_implies</id>
+        <formula>
+            <forall var="b" in="B">
+                <forall var="a" in="A">
+                    <implies>
+                        <bfunc name="equal_x_x">
+                            <!--a.x == b.x-->
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                        <bfunc name="equal_y_y">
+                            <!--a.y == b.y-->
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                    </implies>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+</rules>
