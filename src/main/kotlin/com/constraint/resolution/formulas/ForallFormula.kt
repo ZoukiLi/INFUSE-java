@@ -3,6 +3,9 @@ package com.constraint.resolution.formulas
 import com.CC.Constraints.Formulas.FForall
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
+import io.github.oshai.kotlinlogging.KotlinLogging
+
+private val logger = KotlinLogging.logger {}
 
 data class ForallFormula(
     val variable: Variable,
@@ -97,11 +100,13 @@ data class ForallFormula(
     }
 
     override fun applyCaseToVerifyNode(verifyNode: VerifyNode, repairCase: RepairCase) {
-        // if there are actions that factors this formula, apply them
         if (manager == null) {
+            logger.debug { "Manager is null, skipping case application" }
             return
         }
-        repairCase.actions.filter { it.inPattern(pattern, manager) }.forEach {
+        repairCase.actions.filter {
+            it.inPattern(pattern, manager)
+        }.forEach {
             when (it) {
                 is AdditionRepairAction -> {
                     val ccContext = it.context.ccContext!!

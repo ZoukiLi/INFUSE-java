@@ -1,6 +1,7 @@
 package com.constraint.resolution
 
 import com.CC.Contexts.ContextChange
+import com.CC.Contexts.Context as CCContext
 
 enum class RepairType {
     ADDITION,
@@ -22,6 +23,9 @@ interface RepairAction {
     fun applyTo(manager: ContextManager): List<ContextChange>
     fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager): Boolean
     fun inPattern(patternName: String, manager: ContextManager): Boolean
+    fun equal(other: RepairAction): Boolean
+    fun conflict(other: RepairAction): Boolean
+    fun varEnv(): Map<Variable, CCContext>
 }
 
 data class AdditionRepairAction(val context: Context, val patternName: String) : RepairAction {
@@ -40,6 +44,20 @@ data class AdditionRepairAction(val context: Context, val patternName: String) :
         userConfig.repairType == repairType() && userConfig.patternName == patternName
 
     override fun inPattern(patternName: String, manager: ContextManager) = this.patternName == patternName
+
+    override fun equal(other: RepairAction): Boolean = when (other) {
+        is AdditionRepairAction -> context == other.context && patternName == other.patternName
+        else -> false
+    }
+
+    override fun conflict(other: RepairAction): Boolean = when (other) {
+        is RemovalRepairAction -> context == other.context && patternName == other.patternName
+        else -> false
+    }
+
+    override fun varEnv(): Map<Variable, CCContext> {
+        return context.ccContext?.let { mapOf("var" to it) } ?: emptyMap()
+    }
 }
 
 data class RemovalRepairAction(val context: Context, val patternName: String) : RepairAction {
@@ -57,6 +75,20 @@ data class RemovalRepairAction(val context: Context, val patternName: String) : 
         userConfig.repairType == repairType() && userConfig.patternName == patternName
 
     override fun inPattern(patternName: String, manager: ContextManager) = this.patternName == patternName
+
+    override fun equal(other: RepairAction): Boolean = when (other) {
+        is RemovalRepairAction -> context == other.context && patternName == other.patternName
+        else -> false
+    }
+
+    override fun conflict(other: RepairAction): Boolean = when (other) {
+        is AdditionRepairAction -> context == other.context && patternName == other.patternName
+        else -> false
+    }
+
+    override fun varEnv(): Map<Variable, CCContext> {
+        return context.ccContext?.let { mapOf("var" to it) } ?: emptyMap()
+    }
 }
 
 data class EqualizationRepairAction(
@@ -79,6 +111,35 @@ data class EqualizationRepairAction(
 
     override fun inPattern(patternName: String, manager: ContextManager) =
         manager.patternsOf(context1).contains(patternName)
+
+    override fun equal(other: RepairAction): Boolean = when (other) {
+        is EqualizationRepairAction -> {
+            (context1 == other.context1 && attributeName1 == other.attributeName1 &&
+                    context2 == other.context2 && attributeName2 == other.attributeName2) ||
+                    (context1 == other.context2 && attributeName1 == other.attributeName2 &&
+                            context2 == other.context1 && attributeName2 == other.attributeName1)
+        }
+
+        else -> false
+    }
+
+    override fun conflict(other: RepairAction): Boolean = when (other) {
+        is DifferentiationRepairAction -> {
+            (context1 == other.context1 && attributeName1 == other.attributeName1 &&
+                    context2 == other.context2 && attributeName2 == other.attributeName2) ||
+                    (context1 == other.context2 && attributeName1 == other.attributeName2 &&
+                            context2 == other.context1 && attributeName2 == other.attributeName1)
+        }
+
+        else -> false
+    }
+
+    override fun varEnv(): Map<Variable, CCContext> {
+        val env = mutableMapOf<Variable, CCContext>()
+        context1.ccContext?.let { env["var1"] = it }
+        context2.ccContext?.let { env["var2"] = it }
+        return env
+    }
 }
 
 data class EqualizationConstRepairAction(
@@ -98,7 +159,26 @@ data class EqualizationConstRepairAction(
     override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
         userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
 
-    override fun inPattern(patternName: String, manager: ContextManager) = manager.patternsOf(context1).contains(patternName)
+    override fun inPattern(patternName: String, manager: ContextManager) =
+        manager.patternsOf(context1).contains(patternName)
+
+    override fun equal(other: RepairAction): Boolean = when (other) {
+        is EqualizationConstRepairAction ->
+            context1 == other.context1 && attributeName1 == other.attributeName1 && value == other.value
+
+        else -> false
+    }
+
+    override fun conflict(other: RepairAction): Boolean = when (other) {
+        is DifferentiationConstRepairAction ->
+            context1 == other.context1 && attributeName1 == other.attributeName1 && value == other.value
+
+        else -> false
+    }
+
+    override fun varEnv(): Map<Variable, CCContext> {
+        return context1.ccContext?.let { mapOf("var1" to it) } ?: emptyMap()
+    }
 }
 
 data class DifferentiationRepairAction(
@@ -121,6 +201,35 @@ data class DifferentiationRepairAction(
 
     override fun inPattern(patternName: String, manager: ContextManager) =
         manager.patternsOf(context1).contains(patternName)
+
+    override fun equal(other: RepairAction): Boolean = when (other) {
+        is DifferentiationRepairAction -> {
+            (context1 == other.context1 && attributeName1 == other.attributeName1 &&
+                    context2 == other.context2 && attributeName2 == other.attributeName2) ||
+                    (context1 == other.context2 && attributeName1 == other.attributeName2 &&
+                            context2 == other.context1 && attributeName2 == other.attributeName1)
+        }
+
+        else -> false
+    }
+
+    override fun conflict(other: RepairAction): Boolean = when (other) {
+        is EqualizationRepairAction -> {
+            (context1 == other.context1 && attributeName1 == other.attributeName1 &&
+                    context2 == other.context2 && attributeName2 == other.attributeName2) ||
+                    (context1 == other.context2 && attributeName1 == other.attributeName2 &&
+                            context2 == other.context1 && attributeName2 == other.attributeName1)
+        }
+
+        else -> false
+    }
+
+    override fun varEnv(): Map<Variable, CCContext> {
+        val env = mutableMapOf<Variable, CCContext>()
+        context1.ccContext?.let { env["var1"] = it }
+        context2.ccContext?.let { env["var2"] = it }
+        return env
+    }
 }
 
 data class DifferentiationConstRepairAction(
@@ -140,7 +249,26 @@ data class DifferentiationConstRepairAction(
     override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
         userConfig.repairType == repairType() && manager.patternsOf(context1).contains(userConfig.patternName)
 
-    override fun inPattern(patternName: String, manager: ContextManager) = manager.patternsOf(context1).contains(patternName)
+    override fun inPattern(patternName: String, manager: ContextManager) =
+        manager.patternsOf(context1).contains(patternName)
+
+    override fun equal(other: RepairAction): Boolean = when (other) {
+        is DifferentiationConstRepairAction ->
+            context1 == other.context1 && attributeName1 == other.attributeName1 && value == other.value
+
+        else -> false
+    }
+
+    override fun conflict(other: RepairAction): Boolean = when (other) {
+        is EqualizationConstRepairAction ->
+            context1 == other.context1 && attributeName1 == other.attributeName1 && value == other.value
+
+        else -> false
+    }
+
+    override fun varEnv(): Map<Variable, CCContext> {
+        return context1.ccContext?.let { mapOf("var1" to it) } ?: emptyMap()
+    }
 }
 
 typealias Attribute = Pair<Context, String>
@@ -217,6 +345,23 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
         }
         return actions == other.actions && weight == other.weight
     }
+
+    fun conflict(other: RepairCase): Boolean {
+        return actions.any { action1 ->
+            other.actions.any { action2 ->
+                action1.conflict(action2)
+            }
+        }
+    }
+
+    fun countEquals(other: RepairCase): Int {
+        return actions.count { action1 ->
+            other.actions.any { action2 ->
+                action1.equal(action2)
+            }
+        }
+    }
+
     constructor(action: RepairAction, weight: Double) : this(setOf(action), weight)
 }
 
@@ -255,6 +400,29 @@ data class RepairSuite(val cases: Set<RepairCase>) {
 fun chain(vararg cases: Sequence<RepairCase>): Sequence<RepairCase> = chain(cases.asSequence())
 
 fun chain(caseSeqs: Sequence<Sequence<RepairCase>>) = caseSeqs.flatten()
+
+fun cartesianProductCases(vararg cases: Sequence<RepairCase>): Sequence<Sequence<RepairCase>> = when {
+    cases.isEmpty() -> emptySequence()
+    else -> sequence {
+        val tailProduct = cartesianProductCases(*cases.drop(1).toTypedArray())
+        if (tailProduct.none()) {
+            yieldAll(cases.first().map { sequenceOf(it) })
+            return@sequence
+        }
+        if (cases.first().none()) {
+            yieldAll(tailProduct)
+            return@sequence
+        }
+        cases.first().forEach { head ->
+            tailProduct.forEach { tail ->
+                yield(sequenceOf(head) + tail)
+            }
+        }
+    }
+}
+
+fun cartesianProductCases(cases: Sequence<Sequence<RepairCase>>): Sequence<Sequence<RepairCase>> =
+    cartesianProductCases(*cases.toList().toTypedArray())
 
 fun cartesianProduct(vararg cases: Sequence<RepairCase>): Sequence<RepairCase> = when {
     cases.isEmpty() -> emptySequence()
@@ -295,3 +463,21 @@ fun filterImmutable(
             }
         }
     }
+
+fun hasConflict(cases: Sequence<RepairCase>): Boolean {
+    val caseList = cases.toList()
+    return caseList.indices.any { i ->
+        ((i + 1) until caseList.size).any { j ->
+            caseList[i].conflict(caseList[j])
+        }
+    }
+}
+
+fun countTotalEquals(cases: Sequence<RepairCase>): Int {
+    val caseList = cases.toList()
+    return caseList.indices.sumOf { i ->
+        ((i + 1) until caseList.size).sumOf { j ->
+            caseList[i].countEquals(caseList[j])
+        }
+    }
+}

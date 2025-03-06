@@ -2,6 +2,7 @@ package com.constraint.resolution.formulas
 
 import com.CC.Constraints.Formulas.FBfunc
 import com.CC.Constraints.Runtime.RuntimeNode
+import com.CC.Contexts.Context
 import com.constraint.resolution.*
 
 data class EqualFormula(
@@ -88,7 +89,27 @@ data class EqualFormula(
         verifyNode: VerifyNode,
         repairCase: RepairCase
     ) {
-        // just do nothing
+        val curVarEnv = verifyNode.ccRtNode?.varEnv ?: verifyNode.varEnv ?: return
+        repairCase.actions.forEach { action ->
+            when (action) {
+                is EqualizationRepairAction -> {
+                    // Update the variable environment with the repair action
+                    if (curVarEnv[var1] == action.context1 && attr1 == action.attributeName1) {
+                        // todo
+                    }
+                    val newVarEnv = mutableMapOf<Variable, Context>()
+                    val newCtx1 = Context()
+                    val ctx1 = action.context1.ccContext ?: return
+                    val ctx2 = action.context2.ccContext ?: return
+                    val fields = ctx1.ctx_fields + (attr1 to ctx2.ctx_fields?.get(attr2))
+                    newCtx1.ctx_fields.putAll(fields)
+                    newVarEnv[var1] = newCtx1
+                    newVarEnv[var2] = ctx2
+                    verifyNode.varEnv = action.varEnv()
+                    verifyNode.affected = true
+                }
+            }
+        }
     }
 
     override fun evalVerifyNode(verifyNode: VerifyNode): Boolean {

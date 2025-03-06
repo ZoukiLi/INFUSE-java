@@ -1,8 +1,10 @@
 package com.CC.Util;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.Logger;
+
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Logger;
 
 public interface Loggable {
-    Logger logger = (Logger) LogManager.getLogger(Loggable.class);
+    Logger logger = (Logger) LoggerFactory.getLogger(Loggable.class);
 }
