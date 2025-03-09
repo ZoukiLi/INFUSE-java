@@ -1,7 +1,6 @@
-package com.resolution
+package com.constraint.resolution
 
 import com.CC.Constraints.Rules.RuleHandler
-import com.constraint.resolution.*
 import java.io.File
 import kotlin.test.Test
 

@@ -1,4 +1,4 @@
-package com.resolution
+package com.constraint.resolution
 
 import com.CC.Constraints.Formulas.FExists
 import com.CC.Constraints.Formulas.FForall
@@ -9,7 +9,6 @@ import com.CC.Contexts.ContextChange
 import com.CC.Contexts.ContextPool
 import com.CC.Middleware.Checkers.Checker
 import com.CC.Middleware.Checkers.PCC
-import com.constraint.resolution.*
 import java.io.File
 import kotlin.test.Test
 import io.github.oshai.kotlinlogging.KotlinLogging

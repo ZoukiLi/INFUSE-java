@@ -1,4 +1,4 @@
-package com.resolution
+package com.constraint.resolution
 
 import com.CC.Constraints.Rules.RuleHandler
 import com.CC.Constraints.Runtime.RuntimeNode

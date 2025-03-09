@@ -1,6 +1,7 @@
 plugins {
     id 'java'
-    id 'org.jetbrains.kotlin.jvm' version '2.0.20'
+    id 'org.jetbrains.kotlin.jvm' version '2.1.0'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '2.1.0'
 }
 
 javadoc {
@@ -9,12 +10,12 @@ javadoc {
 
 java{
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(22))
+        languageVersion.set(JavaLanguageVersion.of(23))
     }
 }
 
 group 'org.INFUSE'
-version '1.0[jdk21]'
+version '1.0[jdk23]'
 
 jar {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
@@ -44,6 +45,7 @@ dependencies {
         exclude group: "pull-parser", module: "pull-parser"
     }
     implementation 'com.alibaba.fastjson2:fastjson2:2.0.56'
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0"
     implementation 'commons-cli:commons-cli:1.5.0'
     implementation 'commons-io:commons-io:2.14.0'
     implementation 'io.github.oshai:kotlin-logging-jvm:7.0.3'

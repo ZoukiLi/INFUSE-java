@@ -1,11 +1,9 @@
-package com.resolution
+package com.constraint.resolution
 
 import com.CC.Constraints.Rules.RuleHandler
 import com.CC.Contexts.ContextChange
 import com.CC.Contexts.ContextPool
 import com.CC.Middleware.Checkers.PCC
-import com.constraint.resolution.ContextManager
-import com.constraint.resolution.fromCCFormula
 import java.io.File
 import java.time.Duration
 import kotlin.test.Test
