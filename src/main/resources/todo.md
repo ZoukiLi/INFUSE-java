@@ -70,7 +70,15 @@ structured bfunc
 }
 ```
 
+## Clean the code and Refactor
+
+for now the formulas in kotlin using the java interface in a very verbose way.
+
+and the ContextManager is not easy to use.
+
 ## Add the new Bfunc to the Z3 model
+
+
 
 ## Change the repair action
 
