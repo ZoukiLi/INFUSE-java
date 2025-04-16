@@ -1,0 +1,23 @@
+<rules>
+    <rule>
+        <id>rule1</id>
+        <formula>
+            <forall var="a" in="A">
+                <forall var="b" in="B">
+                    <and>
+                        <bfunc name="less_than_x_y">
+                            <!--b.x < a.y-->
+                            <param pos="var1" var="b"/>
+                            <param pos="var2" var="a"/>
+                        </bfunc>
+                        <bfunc name="less_than_x_y">
+                            <!--a.x < b.y-->
+                            <param pos="var1" var="a"/>
+                            <param pos="var2" var="b"/>
+                        </bfunc>
+                    </and>
+                </forall>
+            </forall>
+        </formula>
+    </rule>
+</rules>

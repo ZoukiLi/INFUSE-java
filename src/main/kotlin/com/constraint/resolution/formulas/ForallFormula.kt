@@ -3,6 +3,7 @@ package com.constraint.resolution.formulas
 import com.CC.Constraints.Formulas.FForall
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
+import com.constraint.resolution.bfunc.BFuncRegistry
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -18,7 +19,7 @@ data class ForallFormula(
     val userConfig: List<RepairDisableConfigItem>? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap): Boolean {
-        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return false
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return true
         return filteredPattern.all { subFormula.evaluate(bind(assignment, variable, it), patternMap) }
     }
 
@@ -180,11 +181,66 @@ data class ForallFormula(
             false -> addRepair
         }
     }
+
+    /**
+     * 生成使FORALL公式为真的Z3条件
+     */
+    override fun Z3CondTrue(assignment: Assignment, patternMap: PatternMap): String {
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] })?.toList() ?: return "True"
+
+        // 如果没有实例，FORALL为真（所有都满足）
+        if (filteredPattern.isEmpty()) {
+            return "True"
+        }
+        
+        // 为每个模式实例生成条件
+        val conditions = filteredPattern.map { 
+            val boundAssignment = bind(assignment, variable, it)
+            subFormula.Z3CondTrue(boundAssignment, patternMap)
+        }
+        
+        // 所有为真，FORALL为真
+        return if (conditions.size == 1) {
+            conditions.first()
+        } else {
+            "And(${conditions.joinToString(", ")})"
+        }
+    }
+    
+    /**
+     * 生成使FORALL公式为假的Z3条件
+     */
+    override fun Z3CondFalse(assignment: Assignment, patternMap: PatternMap): String {
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] })?.toList() ?: return "False"
+        
+        // 如果没有实例，FORALL无法为假
+        if (filteredPattern.isEmpty()) {
+            return "False"
+        }
+        
+        // 为每个模式实例生成条件
+        val conditions = filteredPattern.map { 
+            val boundAssignment = bind(assignment, variable, it)
+            subFormula.Z3CondFalse(boundAssignment, patternMap)
+        }
+        
+        // 任一为假，FORALL为假
+        return if (conditions.size == 1) {
+            conditions.first()
+        } else {
+            "Or(${conditions.joinToString(", ")})"
+        }
+    }
+
+    override fun getUsedAttributes(assignment: Assignment, patternMap: PatternMap): Set<Pair<Attribute, ValueType>> {
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return emptySet()
+        return filteredPattern.flatMap { subFormula.getUsedAttributes(bind(assignment, variable, it), patternMap) }.toSet()
+    }
 }
 
-fun fromCCFormulaForall(fml: FForall, manager: ContextManager?) = ForallFormula(
+fun fromCCFormulaForall(fml: FForall, manager: ContextManager?, registry: BFuncRegistry? = null) = ForallFormula(
     fml.`var`,
-    fromCCFormula(fml.subformula, manager),
+    fromCCFormula(fml.subformula, manager, registry),
     fml.pattern_id,
     1.0,
     fml.filter,

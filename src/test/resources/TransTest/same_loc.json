@@ -1,0 +1,22 @@
+{
+    "name": "same_loc",
+    "params": ["var1", "var2"],
+    "body": {
+        "kind": "binary",
+        "operator": "==",
+        "args": [
+            {
+                "kind": "accessor",
+                "context": "var1",
+                "attribute": "cur_loc",
+                "valueType": "string"
+            },
+            {
+                "kind": "accessor",
+                "context": "var2",
+                "attribute": "cur_loc",
+                "valueType": "string"
+            }
+        ]
+    }
+}

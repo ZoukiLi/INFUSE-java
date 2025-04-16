@@ -58,9 +58,10 @@ class BFuncParser {
 
     private fun parseLiteralValue(json: JsonObject): Any {
         return when (json["valueType"]?.jsonPrimitive?.content) {
-            "int" -> json["value"]?.jsonPrimitive?.int ?: error("Missing value")
-            "bool" -> json["value"]?.jsonPrimitive?.boolean ?: error("Missing value")
-            "string" -> json["value"]?.jsonPrimitive?.content ?: error("Missing value")
+            "int" -> json["value"]?.jsonPrimitive?.int ?: error("Missing value, Should be int")
+            "bool" -> json["value"]?.jsonPrimitive?.boolean ?: error("Missing value, Should be bool")
+            "string" -> json["value"]?.jsonPrimitive?.content ?: error("Missing value, Should be string")
+            "long" -> json["value"]?.jsonPrimitive?.long ?: error("Missing value, Should be long")
             else -> throw IllegalArgumentException("Unsupported literal type: ${json["valueType"]?.jsonPrimitive?.content}")
         }
     }
@@ -74,25 +75,6 @@ class BFuncParser {
         )
     }
 
-    fun toPythonZ3(bfunc: BFunc): String {
-        val sb = StringBuilder()
-        sb.appendLine("from z3 import *")
-        sb.appendLine()
-        sb.appendLine("solver = Solver()")
-        sb.appendLine("# Declare variables")
-        sb.appendLine(generateVariableDeclarations(bfunc))
-        sb.appendLine("# Add constraint")
-        sb.appendLine("solver.add(${expressionToPythonZ3(bfunc.body)})")
-        return sb.toString()
-    }
-
-    private fun generateVariableDeclarations(bfunc: BFunc): String {
-        val variables = collectAccessors(bfunc.body)
-        return variables.joinToString("\n") { (context, attr) ->
-            "${context}_${attr} = Int('${context}_${attr}')"
-        }
-    }
-
     private fun collectAccessors(expr: Expression): Set<Pair<String, String>> {
         return when (expr) {
             is AccessorExpression -> setOf(expr.context to expr.attribute)
@@ -104,14 +86,11 @@ class BFuncParser {
     private fun expressionToPythonZ3(expr: Expression): String {
         return when (expr) {
             is BinaryExpression -> {
-                val op = when (expr.operator) {
-                    "+" -> "+"
-                    "-" -> "-"
-                    "*" -> "*"
-                    "<" -> "<"
-                    ">" -> ">"
-                    "==" -> "=="
-                    else -> throw IllegalArgumentException("Unsupported operator: ${expr.operator}")
+                val op = expr.operator
+                if (op == "and" || op == "or") {
+                    val pythonOp = if (op == "and") "And" else "Or"
+                    // And(a, b)
+                    return "$pythonOp(${expr.args.joinToString(", ") { expressionToPythonZ3(it) }})"
                 }
                 "(${expr.args.joinToString(" $op ") { expressionToPythonZ3(it) }})"
             }

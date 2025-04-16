@@ -1,0 +1,57 @@
+{
+    "name": "same_time",
+    "params": ["var1", "var2"],
+    "body": {
+        "kind": "binary",
+        "operator": "and",
+        "args": [
+            {
+                "kind": "binary",
+                "operator": ">",
+                "args": [
+                    {
+                        "kind": "accessor",
+                        "context": "var1",
+                        "attribute": "timestamp",
+                        "valueType": "long"
+                    },
+                    {
+                        "kind": "accessor",
+                        "context": "var2",
+                        "attribute": "timestamp",
+                        "valueType": "long"
+                    }
+                ]
+            },
+            {
+                "kind": "binary",
+                "operator": "<",
+                "args": [
+                    {
+                        "kind": "binary",
+                        "operator": "-",
+                        "args": [
+                            {
+                                "kind": "accessor",
+                                "context": "var1",
+                                "attribute": "timestamp",
+                                "valueType": "long"
+                            },
+                            {
+                                "kind": "accessor",
+                                "context": "var2",
+                                "attribute": "timestamp",
+                                "valueType": "long"
+                            }
+                        ]
+                    },
+                    {
+                        "kind": "literal",
+                        "value": 100,
+                        "valueType": "long"
+                    }
+                ]
+            }
+        ]
+    }
+}

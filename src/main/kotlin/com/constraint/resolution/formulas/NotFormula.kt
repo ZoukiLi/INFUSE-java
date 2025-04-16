@@ -3,6 +3,7 @@ package com.constraint.resolution.formulas
 import com.CC.Constraints.Formulas.FNot
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
+import com.constraint.resolution.bfunc.BFuncRegistry
 
 data class NotFormula(
     val subFormula: IFormula, val manager: ContextManager?, val userConfig: List<RepairDisableConfigItem>? = null
@@ -65,7 +66,25 @@ data class NotFormula(
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) =
         rctNode.children.first().repairF2T(lk).filterImmutable(userConfig, manager)
+
+    /**
+     * 生成使NOT公式为真的Z3条件
+     */
+    override fun Z3CondTrue(assignment: Assignment, patternMap: PatternMap): String {
+        // NOT为真等同于子公式为假
+        return subFormula.Z3CondFalse(assignment, patternMap)
+    }
+    
+    /**
+     * 生成使NOT公式为假的Z3条件
+     */
+    override fun Z3CondFalse(assignment: Assignment, patternMap: PatternMap): String {
+        // NOT为假等同于子公式为真
+        return subFormula.Z3CondTrue(assignment, patternMap)
+    }
+
+    override fun getUsedAttributes(assignment: Assignment, patternMap: PatternMap) = subFormula.getUsedAttributes(assignment, patternMap)
 }
 
-fun fromCCFormulaNot(fml: FNot, manager: ContextManager?) =
-    NotFormula(fromCCFormula(fml.subformula, manager), manager, fml.disableConfigItems)
+fun fromCCFormulaNot(fml: FNot, manager: ContextManager?, registry: BFuncRegistry? = null) =
+    NotFormula(fromCCFormula(fml.subformula, manager, registry), manager, fml.disableConfigItems)

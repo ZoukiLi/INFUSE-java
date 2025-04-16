@@ -3,6 +3,7 @@ package com.constraint.resolution.formulas
 import com.CC.Constraints.Formulas.FOr
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
+import com.constraint.resolution.bfunc.BFuncRegistry
 
 data class OrFormula(
     val left: IFormula,
@@ -118,11 +119,31 @@ data class OrFormula(
         TODO("Not yet implemented")
     }
 
+    /**
+     * 生成使OR公式为真的Z3条件
+     */
+    override fun Z3CondTrue(assignment: Assignment, patternMap: PatternMap): String {
+        val leftCond = left.Z3CondTrue(assignment, patternMap)
+        val rightCond = right.Z3CondTrue(assignment, patternMap)
+        return "Or($leftCond, $rightCond)"
+    }
+    
+    /**
+     * 生成使OR公式为假的Z3条件
+     */
+    override fun Z3CondFalse(assignment: Assignment, patternMap: PatternMap): String {
+        val leftCond = left.Z3CondFalse(assignment, patternMap)
+        val rightCond = right.Z3CondFalse(assignment, patternMap)
+        return "And($leftCond, $rightCond)"
+    }
+
+    override fun getUsedAttributes(assignment: Assignment, patternMap: PatternMap) =
+        left.getUsedAttributes(assignment, patternMap) + right.getUsedAttributes(assignment, patternMap)
 }
 
-fun fromCCFormulaOr(fml: FOr, manager: ContextManager?) = OrFormula(
-    fromCCFormula(fml.subformulas.first(), manager),
-    fromCCFormula(fml.subformulas.last(), manager),
+fun fromCCFormulaOr(fml: FOr, manager: ContextManager?, registry: BFuncRegistry? = null) = OrFormula(
+    fromCCFormula(fml.subformulas.first(), manager, registry),
+    fromCCFormula(fml.subformulas.last(), manager, registry),
     manager,
     fml.disableConfigItems
 )

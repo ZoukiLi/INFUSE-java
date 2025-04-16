@@ -3,6 +3,7 @@ package com.constraint.resolution.formulas
 import com.CC.Constraints.Formulas.FExists
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
+import com.constraint.resolution.bfunc.BFuncRegistry
 
 data class ExistsFormula(
     val variable: Variable,
@@ -166,11 +167,66 @@ data class ExistsFormula(
             false -> addRepair and addNode.repairF2T(lk)
         }
     }
+
+    /**
+     * 生成使EXISTS公式为真的Z3条件
+     */
+    override fun Z3CondTrue(assignment: Assignment, patternMap: PatternMap): String {
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] })?.toList() ?: return "False"
+
+        // 如果没有实例，EXISTS为假
+        if (filteredPattern.isEmpty()) {
+            return "False"
+        }
+        
+        // 为每个模式实例生成条件
+        val conditions = filteredPattern.map { 
+            val boundAssignment = bind(assignment, variable, it)
+            subFormula.Z3CondTrue(boundAssignment, patternMap)
+        }
+        
+        // 任一为真，EXISTS为真
+        return if (conditions.size == 1) {
+            conditions.first()
+        } else {
+            "Or(${conditions.joinToString(", ")})"
+        }
+    }
+    
+    /**
+     * 生成使EXISTS公式为假的Z3条件
+     */
+    override fun Z3CondFalse(assignment: Assignment, patternMap: PatternMap): String {
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] })?.toList() ?: return "True"
+        
+        // 如果没有实例，EXISTS为假（自动满足）
+        if (filteredPattern.isEmpty()) {
+            return "True"
+        }
+        
+        // 为每个模式实例生成条件
+        val conditions = filteredPattern.map { 
+            val boundAssignment = bind(assignment, variable, it)
+            subFormula.Z3CondFalse(boundAssignment, patternMap)
+        }
+        
+        // 所有为假，EXISTS为假
+        return if (conditions.size == 1) {
+            conditions.first()
+        } else {
+            "And(${conditions.joinToString(", ")})"
+        }
+    }
+
+    override fun getUsedAttributes(assignment: Assignment, patternMap: PatternMap): Set<Pair<Attribute, ValueType>> {
+        val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return emptySet()
+        return filteredPattern.flatMap { subFormula.getUsedAttributes(bind(assignment, variable, it), patternMap) }.toSet()
+    }
 }
 
-fun fromCCFormulaExists(fml: FExists, manager: ContextManager?) = ExistsFormula(
+fun fromCCFormulaExists(fml: FExists, manager: ContextManager?, registry: BFuncRegistry? = null) = ExistsFormula(
     fml.`var`,
-    fromCCFormula(fml.subformula, manager),
+    fromCCFormula(fml.subformula, manager, registry),
     fml.pattern_id,
     1.0,
     fml.filter,

@@ -10,7 +10,7 @@ data class Context(
     val attributes: AttributeMap,
     var ccContext: com.CC.Contexts.Context? = null
 ) {
-    override fun toString() = attributes["name"]?.first ?: "unknown($id)"
+    override fun toString() = "ctx_$id(" + (attributes["name"]?.first ?: "unknown") + ")"
     fun updateAttribute(attribute: String, value: String?): Context {
         val newValue = value?.let { it to true } ?: (String() to false)
         val newAttrs = attributes + (attribute to newValue)

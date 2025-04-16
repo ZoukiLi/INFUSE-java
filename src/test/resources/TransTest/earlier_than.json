@@ -1,0 +1,22 @@
+{
+  "name": "earlier_than",
+  "params": ["var1", "var2"],
+  "body": {
+    "kind": "binary",
+    "operator": ">",
+    "args": [
+      {
+          "kind": "accessor",
+          "context": "var1",
+          "attribute": "timestamp",
+          "valueType": "long"
+      },
+      {
+          "kind": "accessor",
+          "context": "var2",
+          "attribute": "timestamp",
+          "valueType": "long"
+      }
+    ]
+  }
+}

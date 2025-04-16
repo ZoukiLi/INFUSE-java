@@ -1,0 +1,21 @@
+{
+  "name": "not_still",
+  "params": ["var1"],
+  "body": {
+    "kind": "binary",
+    "operator": "!=",
+    "args": [
+      {
+        "kind": "accessor",
+        "context": "var1",
+        "attribute": "state",
+        "valueType": "int"
+      },
+      {
+        "kind": "literal",
+        "value": 0,
+        "valueType": "int"
+      }
+    ]
+  }
+}

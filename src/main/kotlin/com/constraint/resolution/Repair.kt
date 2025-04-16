@@ -1,7 +1,11 @@
 package com.constraint.resolution
 
 import com.CC.Contexts.ContextChange
+import com.constraint.resolution.formulas.BFuncFormula
 import com.CC.Contexts.Context as CCContext
+import io.github.oshai.kotlinlogging.KotlinLogging
+
+private val logger = KotlinLogging.logger {}
 
 enum class RepairType {
     ADDITION,
@@ -13,6 +17,16 @@ enum class RepairType {
 data class RepairDisableConfigItem(
     val repairType: RepairType,
     val patternName: String
+)
+
+data class RepairConfig(
+    val items: List<RepairDisableConfigItem>,
+    val maxAddition: Int,
+    val maxUpdate: Int,
+    val maxRemoval: Int,
+    val prefer: String,
+    val maxCaseSize: Int,
+    val maxSuiteSize: Int,
 )
 
 interface RepairAction {
@@ -271,6 +285,57 @@ data class DifferentiationConstRepairAction(
     }
 }
 
+
+enum class ValueType {
+    INT,
+    BOOL,
+    STRING,
+    LONG
+}
+
+fun ValueType.toZ3Type() = when (this) {
+    ValueType.INT -> "Int"
+    ValueType.BOOL -> "Bool"
+    ValueType.STRING -> "String"
+    ValueType.LONG -> "Int"
+}
+
+fun String.toValueType(): ValueType {
+    return when (this) {
+        "int" -> ValueType.INT
+        "bool" -> ValueType.BOOL
+        "string" -> ValueType.STRING
+        "long" -> ValueType.LONG
+        else -> throw IllegalArgumentException("Unknown value type: $this")
+    }
+}
+
+/**
+ * 修复BFunc的参数
+ * 只需要保存需要修改的上下文名称和属性名称
+ * 具体的修复操作等待全部的修复案例生成后再执行
+ */
+data class BfuncRepairAction(
+    val context: Context,
+    val attribute: String,
+    val type: ValueType
+) : RepairAction {
+    override fun repairType() = RepairType.UPDATE
+    override fun execute(patternMap: PatternMap): PatternMap = patternMap
+    override fun display(): String = "<BFunc, $context, $attribute, $type>"
+    override fun reverse(manager: ContextManager) = listOf<ContextChange>()
+    override fun applyTo(manager: ContextManager) = listOf<ContextChange>()
+    override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
+        userConfig.repairType == repairType() && manager.patternsOf(context).contains(userConfig.patternName)
+    override fun inPattern(patternName: String, manager: ContextManager) = false
+    override fun equal(other: RepairAction): Boolean = false
+    override fun conflict(other: RepairAction): Boolean = false
+    override fun varEnv(): Map<Variable, CCContext> {
+        return context.ccContext?.let { mapOf("var" to it) } ?: emptyMap()
+    }
+    var value: String = ""
+}
+
 typealias Attribute = Pair<Context, String>
 
 data class DisjointSet<T>(
@@ -354,6 +419,14 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
         }
     }
 
+    fun conflict(): Boolean {
+        return actions.any { action1 ->
+            actions.any { action2 ->
+                !action1.equal(action2) && action1.conflict(action2)
+            }
+        }
+    }
+
     fun countEquals(other: RepairCase): Int {
         return actions.count { action1 ->
             other.actions.any { action2 ->
@@ -365,7 +438,14 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
     constructor(action: RepairAction, weight: Double) : this(setOf(action), weight)
 }
 
-data class RepairSuite(val cases: Set<RepairCase>) {
+/**
+ * 修复集合类，包含多个修复案例
+ */
+data class RepairSuite(
+    val cases: Set<RepairCase> = setOf()
+) {
+    constructor(action: RepairAction, weight: Double) : this(setOf(RepairCase(action, weight)))
+    
     fun display(): String =
         cases.mapIndexed { index, case -> "Case $index.\n${case.display()}" }.joinToString("\n----------\n")
 
@@ -393,8 +473,6 @@ data class RepairSuite(val cases: Set<RepairCase>) {
 
     fun firstCase(): RepairCase? = cases.minByOrNull { it.actions.size }
 
-    constructor(action: RepairAction, weight: Double) : this(setOf(RepairCase(action, weight)))
-    constructor() : this(emptySet())
 }
 
 fun chain(vararg cases: Sequence<RepairCase>): Sequence<RepairCase> = chain(cases.asSequence())
@@ -480,4 +558,136 @@ fun countTotalEquals(cases: Sequence<RepairCase>): Int {
             caseList[i].countEquals(caseList[j])
         }
     }
+}
+
+fun genZ3AttrConditions(case: RepairCase, usedAttrs: Set<Pair<Attribute, ValueType>>): List<String> {
+    val variableAttrs = case.actions.filterIsInstance<BfuncRepairAction>().map { it.context to it.attribute }.toSet()
+    val fixedAttrs = usedAttrs.filter { (attr) -> attr !in variableAttrs }
+    return fixedAttrs.map { (attr, cls) ->
+        val (context, attrName) = attr
+        val value = context.attributes[attrName]?.first
+        val identifier = "${cls.toZ3Type()}(\"ctx_${context.id}_$attrName\")"
+        "$identifier == $value"
+    }
+}
+
+fun genZ3PyCode(formula: IFormula, case: RepairCase, patternMap: PatternMap): String {
+    val usedAttrs = formula.getUsedAttributes(mapOf(), patternMap)
+    val attrConditions = genZ3AttrConditions(case, usedAttrs)
+    val newPat = case.execute(patternMap)
+    val fmlCondition = formula.Z3CondTrue(mapOf(), newPat)
+    /*
+    from z3 import *
+    solver = Solver()
+    solver.add(And(
+        # attr1 == value1
+        # attr2 == value2
+        # ...
+        # attrN == valueN
+        # formula
+    ))
+    rst = solver.check()
+    if (sat == rst):
+        print(solver.model())
+    else:
+        print(rst)
+     */
+    return """
+from z3 import *
+solver = Solver()
+solver.add(And(
+    ${attrConditions.joinToString(",\n    ")},
+    $fmlCondition
+))
+rst = solver.check()
+if sat == rst:
+    print(solver.model())
+else:
+    print(rst)
+"""
+}
+
+/**
+ * 运行Python代码
+ * @param pyCode Python代码字符串
+ * @param pythonPath Python解释器路径，默认为"python"
+ * @return 执行结果
+ */
+fun runPyCode(pyCode: String, pythonPath: String = "python"): String {
+    // 创建临时文件
+    val tempFile = kotlin.io.path.createTempFile(
+        prefix = "z3_script_",
+        suffix = ".py"
+    ).toFile()
+    
+    try {
+        // 写入Python代码到临时文件
+        tempFile.writeText(pyCode)
+        
+        val processBuilder = ProcessBuilder(pythonPath, tempFile.absolutePath)
+        
+        // 配置环境变量
+        val env = processBuilder.environment()
+        logger.info { "env: $env" }
+        env.remove("PYTHONHOME")
+        env["PYTHONUNBUFFERED"] = "1"
+        
+        // 配置错误输出合并到标准输出
+        processBuilder.redirectErrorStream(true)
+        
+        return try {
+            val process = processBuilder.start()
+            
+            // 读取输出
+            val output = process.inputStream.bufferedReader().use { it.readText() }
+            
+            // 等待进程完成
+            val exitCode = process.waitFor()
+            if (exitCode != 0) {
+                logger.error { "Python process exited with code $exitCode\nOutput: $output" }
+            }
+            
+            output
+        } catch (e: Exception) {
+            logger.error { "Failed to run Python code: ${e.message}" }
+            ""
+        }
+        
+    } finally {
+        // 清理临时文件
+        try {
+            tempFile.delete()
+        } catch (e: Exception) {
+            logger.warn { "Failed to delete temporary file: ${tempFile.absolutePath}" }
+        }
+    }
+}
+
+/**
+ * 使用指定的Python环境运行代码
+ * @param pyCode Python代码字符串
+ * @param envName conda环境名称或virtualenv路径
+ * @return 执行结果
+ */
+fun runPyCodeWithEnv(pyCode: String, envName: String): String {
+    // 对于conda环境
+    if (envName.startsWith("conda:")) {
+        val condaEnv = envName.removePrefix("conda:")
+        return runPyCode(
+            pyCode,
+            "conda run -n $condaEnv python"
+        )
+    }
+    
+    // 对于virtualenv环境
+    val pythonPath = when {
+        // Windows
+        System.getProperty("os.name").lowercase().contains("windows") ->
+            "$envName/Scripts/python.exe"
+        // Unix-like
+        else ->
+            "$envName/bin/python"
+    }
+    
+    return runPyCode(pyCode, pythonPath)
 }

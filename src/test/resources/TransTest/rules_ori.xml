@@ -1,0 +1,116 @@
+<rules>
+    <rule>
+        <id>rule_still</id>
+        <formula>
+            <forall var="v1" in="latest"
+                    non-updatable="latest"
+                    non-addable="latest"
+                    prefer="branch"
+                    max-delete="1"
+                    max-case-size="1"
+                    max-suite-size="1"
+            >
+                <bfunc name="not_still">
+                    <param pos="var1" var="v1"/>
+                </bfunc>
+            </forall>
+        </formula>
+        <resolver>
+            <size>1</size>
+            <sort>latest</sort>
+<!--        <sort>user_defined</sort>-->
+            <group>0</group>
+            <priority>0</priority>
+            <verifier>none</verifier>
+<!--        <verifier>immediate</verifier>-->
+        </resolver>
+    </rule>
+    <rule>
+        <id>rule_order1</id>
+        <formula>
+            <forall var="v1" in="orange_car1"
+                    non-updatable="orange_car1"
+                    non-addable="orange_car1"
+                    prefer="branch"
+                    max-delete="1"
+                    max-case-size="1"
+                    max-suite-size="5"
+            >
+<!--                max="orange_car1:{delete,1},orange_car2:{delete,1}"
+                    prefer="branch,revert"
+-->
+<!--                cost="orange_car1:{delete,5},orange_car2:{delete,10}"
+                    max-cost="100"
+-->
+                <not>
+                    <and prefer="left">
+                        <exists var="v2" in="orange_car2"
+                                non-updatable="orange_car2"
+                                non-addable="orange_car2"
+                                prefer="revert"
+                                max-case-size="1"
+                                max-suite-size="2"
+                        >
+                            <bfunc name="earlier_than">
+                                <param pos="var1" var="v1"/>
+                                <param pos="var2" var="v2"/>
+                            </bfunc>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="orange_car3"
+                                    non-updatable="orange_car3"
+                                    non-addable="orange_car3"
+                                    prefer="revert"
+                                    max-case-size="1"
+                                    max-suite-size="2"
+                            >
+                                <bfunc name="prev_loc">
+                                    <param pos="var1" var="v1"/>
+                                    <param pos="var2" var="v3"/>
+                                </bfunc>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resolver>
+            <size>5</size>
+            <sort>latest</sort>
+            <group>1</group>
+            <priority>0</priority>
+            <verifier>none</verifier>
+        </resolver>
+    </rule>
+    <rule>
+        <id>rule_order2</id>
+        <formula>
+            <forall var="v1" in="green_car1">
+                <not>
+                    <and>
+                        <exists var="v2" in="green_car2">
+                            <bfunc name="earlier_than">
+                                <param pos="var1" var="v1"/>
+                                <param pos="var2" var="v2"/>
+                            </bfunc>
+                        </exists>
+                        <not>
+                            <exists var="v3" in="green_car3">
+                                <bfunc name="prev_loc">
+                                    <param pos="var1" var="v1"/>
+                                    <param pos="var2" var="v3"/>
+                                </bfunc>
+                            </exists>
+                        </not>
+                    </and>
+                </not>
+            </forall>
+        </formula>
+        <resolver>
+            <size>5</size>
+            <sort>latest</sort>
+            <group>2</group>
+            <priority>0</priority>
+        </resolver>
+    </rule>
+</rules>

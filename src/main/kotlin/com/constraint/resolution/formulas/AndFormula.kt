@@ -3,6 +3,7 @@ package com.constraint.resolution.formulas
 import com.CC.Constraints.Formulas.FAnd
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
+import com.constraint.resolution.bfunc.BFuncRegistry
 
 data class AndFormula(
     val left: IFormula, val right: IFormula, val manager: ContextManager?, val userConfig: List<RepairDisableConfigItem>? = null
@@ -130,11 +131,32 @@ data class AndFormula(
         verifyNode.affected = false
         return result
     }
+
+    /**
+     * 生成使AND公式为真的Z3条件
+     */
+    override fun Z3CondTrue(assignment: Assignment, patternMap: PatternMap): String {
+        val leftCond = left.Z3CondTrue(assignment, patternMap)
+        val rightCond = right.Z3CondTrue(assignment, patternMap)
+        return "And($leftCond, $rightCond)"
+    }
+    
+    /**
+     * 生成使AND公式为假的Z3条件
+     */
+    override fun Z3CondFalse(assignment: Assignment, patternMap: PatternMap): String {
+        val leftCond = left.Z3CondFalse(assignment, patternMap)
+        val rightCond = right.Z3CondFalse(assignment, patternMap)
+        return "Or($leftCond, $rightCond)"
+    }
+
+    override fun getUsedAttributes(assignment: Assignment, patternMap: PatternMap) =
+        left.getUsedAttributes(assignment, patternMap) + right.getUsedAttributes(assignment, patternMap)
 }
 
-fun fromCCFormulaAnd(fml: FAnd, manager: ContextManager?) = AndFormula(
-    fromCCFormula(fml.subformulas.first(), manager),
-    fromCCFormula(fml.subformulas.last(), manager),
+fun fromCCFormulaAnd(fml: FAnd, manager: ContextManager?, registry: BFuncRegistry? = null) = AndFormula(
+    fromCCFormula(fml.subformulas.first(), manager, registry),
+    fromCCFormula(fml.subformulas.last(), manager, registry),
     manager,
     fml.disableConfigItems
 )

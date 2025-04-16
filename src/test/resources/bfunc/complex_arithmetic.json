@@ -1,0 +1,56 @@
+{
+    "name": "complex_arithmetic",
+    "params": ["context1", "context2"],
+    "body": {
+        "kind": "binary",
+        "operator": "<",
+        "args": [
+            {
+                "kind": "binary",
+                "operator": "+",
+                "args": [
+                    {
+                        "kind": "accessor",
+                        "context": "context1",
+                        "attribute": "value",
+                        "valueType": "int"
+                    },
+                    {
+                        "kind": "binary",
+                        "operator": "*",
+                        "args": [
+                            {
+                                "kind": "accessor",
+                                "context": "context2",
+                                "attribute": "multiplier",
+                                "valueType": "int"
+                            },
+                            {
+                                "kind": "literal",
+                                "value": 5,
+                                "valueType": "int"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "kind": "binary",
+                "operator": "-",
+                "args": [
+                    {
+                        "kind": "accessor",
+                        "context": "context2",
+                        "attribute": "total",
+                        "valueType": "int"
+                    },
+                    {
+                        "kind": "literal",
+                        "value": 10,
+                        "valueType": "int"
+                    }
+                ]
+            }
+        ]
+    }
+} 

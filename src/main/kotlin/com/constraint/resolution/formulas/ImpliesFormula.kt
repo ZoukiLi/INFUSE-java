@@ -3,6 +3,7 @@ package com.constraint.resolution.formulas
 import com.CC.Constraints.Formulas.FImplies
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.constraint.resolution.*
+import com.constraint.resolution.bfunc.BFuncRegistry
 
 data class ImpliesFormula(
     val left: IFormula,
@@ -122,12 +123,33 @@ data class ImpliesFormula(
         }
         TODO("Not yet implemented")
     }
+
+    /**
+     * 生成使IMPLIES公式为真的Z3条件
+     */
+    override fun Z3CondTrue(assignment: Assignment, patternMap: PatternMap): String {
+        val leftFalse = left.Z3CondFalse(assignment, patternMap)
+        val rightTrue = right.Z3CondTrue(assignment, patternMap)
+        return "Or($leftFalse, $rightTrue)"
+    }
+    
+    /**
+     * 生成使IMPLIES公式为假的Z3条件
+     */
+    override fun Z3CondFalse(assignment: Assignment, patternMap: PatternMap): String {
+        val leftTrue = left.Z3CondTrue(assignment, patternMap)
+        val rightFalse = right.Z3CondFalse(assignment, patternMap)
+        return "And($leftTrue, $rightFalse)"
+    }
+
+    override fun getUsedAttributes(assignment: Assignment, patternMap: PatternMap) =
+        left.getUsedAttributes(assignment, patternMap) + right.getUsedAttributes(assignment, patternMap)
 }
 
-fun fromCCFormulaImplies(fml: FImplies, manager: ContextManager?) =
+fun fromCCFormulaImplies(fml: FImplies, manager: ContextManager?, registry: BFuncRegistry? = null) =
     ImpliesFormula(
-        fromCCFormula(fml.subformulas.first(), manager),
-        fromCCFormula(fml.subformulas.last(), manager),
+        fromCCFormula(fml.subformulas.first(), manager, registry),
+        fromCCFormula(fml.subformulas.last(), manager, registry),
         manager,
         fml.disableConfigItems
     )

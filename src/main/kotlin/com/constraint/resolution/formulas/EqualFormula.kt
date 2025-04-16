@@ -4,6 +4,8 @@ import com.CC.Constraints.Formulas.FBfunc
 import com.CC.Constraints.Runtime.RuntimeNode
 import com.CC.Contexts.Context
 import com.constraint.resolution.*
+import com.constraint.resolution.bfunc.BFuncRegistry
+import kotlin.math.absoluteValue
 
 data class EqualFormula(
     val var1: Variable, val attr1: String, val var2: Variable, val attr2: String, val weight: Double = 1.0,
@@ -120,6 +122,42 @@ data class EqualFormula(
         val result = value1 == value2
         return result
     }
+
+    /**
+     * 生成使EQUAL公式为真的Z3条件
+     */
+    override fun Z3CondTrue(assignment: Assignment, patternMap: PatternMap): String {
+        val ctx1 = assignment[var1]
+        val ctx2 = assignment[var2]
+        
+        val ctx1Id = ctx1?.hashCode()?.absoluteValue ?: 0
+        val ctx2Id = ctx2?.hashCode()?.absoluteValue ?: 0
+        
+        val var1Name = "${var1}_${ctx1Id}_${attr1}"
+        val var2Name = "${var2}_${ctx2Id}_${attr2}"
+        
+        return "($var1Name == $var2Name)"
+    }
+    
+    /**
+     * 生成使EQUAL公式为假的Z3条件
+     */
+    override fun Z3CondFalse(assignment: Assignment, patternMap: PatternMap): String {
+        val ctx1 = assignment[var1]
+        val ctx2 = assignment[var2]
+        
+        val ctx1Id = ctx1?.hashCode()?.absoluteValue ?: 0
+        val ctx2Id = ctx2?.hashCode()?.absoluteValue ?: 0
+        
+        val var1Name = "${var1}_${ctx1Id}_${attr1}"
+        val var2Name = "${var2}_${ctx2Id}_${attr2}"
+        
+        return "($var1Name != $var2Name)"
+    }
+
+    override fun getUsedAttributes(assignment: Assignment, patternMap: PatternMap): Set<Pair<Attribute, ValueType>> {
+        return setOf()
+    }
 }
 
 data class EqualConstFormula(val var1: Variable, val attr1: String, val value: String, val weight: Double = 1.0,
@@ -209,9 +247,35 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
         val result = value1 == value
         return result
     }
+
+    /**
+     * 生成使EQUAL_CONST公式为真的Z3条件
+     */
+    override fun Z3CondTrue(assignment: Assignment, patternMap: PatternMap): String {
+        val ctx1 = assignment[var1]
+        val ctx1Id = ctx1?.hashCode()?.absoluteValue ?: 0
+        val varName = "${var1}_${ctx1Id}_${attr1}"
+        
+        return "($varName == \"$value\")"
+    }
+    
+    /**
+     * 生成使EQUAL_CONST公式为假的Z3条件
+     */
+    override fun Z3CondFalse(assignment: Assignment, patternMap: PatternMap): String {
+        val ctx1 = assignment[var1]
+        val ctx1Id = ctx1?.hashCode()?.absoluteValue ?: 0
+        val varName = "${var1}_${ctx1Id}_${attr1}"
+        
+        return "($varName != \"$value\")"
+    }
+
+    override fun getUsedAttributes(assignment: Assignment, patternMap: PatternMap): Set<Pair<Attribute, ValueType>> {
+        return setOf()
+    }
 }
 
-fun fromCCFormulaBfunc(fml: FBfunc, manager: ContextManager?): IFormula {
+fun fromCCFormulaBfunc(fml: FBfunc, manager: ContextManager?, registry: BFuncRegistry? = null): IFormula {
     val names = fml.func.split('_')
     assert(names.first() == "equal")
     return if (names[1] == "const") {
