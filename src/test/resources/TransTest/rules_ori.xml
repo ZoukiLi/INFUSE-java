@@ -6,7 +6,7 @@
                     non-updatable="latest"
                     non-addable="latest"
                     prefer="branch"
-                    max-delete="1"
+                    max-remove="1"
                     max-case-size="1"
                     max-suite-size="1"
             >
@@ -32,14 +32,14 @@
                     non-updatable="orange_car1"
                     non-addable="orange_car1"
                     prefer="branch"
-                    max-delete="1"
+                    max-remove="1"
                     max-case-size="1"
                     max-suite-size="5"
             >
-<!--                max="orange_car1:{delete,1},orange_car2:{delete,1}"
+<!--                max="orange_car1:{remove,1},orange_car2:{update,1}"
                     prefer="branch,revert"
 -->
-<!--                cost="orange_car1:{delete,5},orange_car2:{delete,10}"
+<!--                cost="orange_car1:{remove,5},orange_car2:{add,10}"
                     max-cost="100"
 -->
                 <not>

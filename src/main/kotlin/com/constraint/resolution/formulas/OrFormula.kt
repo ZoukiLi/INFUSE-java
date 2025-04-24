@@ -9,14 +9,14 @@ data class OrFormula(
     val left: IFormula,
     val right: IFormula,
     val manager: ContextManager?,
-    val userConfig: List<RepairDisableConfigItem>? = null
+    val userConfig: RepairConfig? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap) =
         left.evaluate(assignment, patternMap) or right.evaluate(assignment, patternMap)
 
     override fun repairF2T(assignment: Assignment, patternMap: PatternMap, lk: Boolean) =
         (left.repairF2T(assignment, patternMap, lk) or right.repairF2T(assignment, patternMap, lk)).filterImmutable(
-            userConfig, manager
+            userConfig?.items, manager
         )
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
@@ -31,7 +31,7 @@ data class OrFormula(
                 false to true -> right.repairT2F(assignment, patternMap, lk)
                 true to false -> left.repairT2F(assignment, patternMap, lk)
                 else -> RepairSuite(setOf())
-            }.filterImmutable(userConfig, manager)
+            }.filterImmutable(userConfig?.items, manager)
         }
         TODO("Locked repair not implemented for OrFormula")
     }
@@ -103,7 +103,7 @@ data class OrFormula(
 
     override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) =
         rctNode.children[0].repairF2T(lk) or rctNode.children[1].repairF2T(lk)
-            .filterImmutable(userConfig, manager)
+            .filterImmutable(userConfig?.items, manager)
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean): RepairSuite {
         if (!lk) {
@@ -114,7 +114,7 @@ data class OrFormula(
                 Pair(false, true) -> rightNode.repairT2F(lk)
                 Pair(true, false) -> leftNode.repairT2F(lk)
                 else -> RepairSuite(setOf())
-            }.filterImmutable(userConfig, manager)
+            }.filterImmutable(userConfig?.items, manager)
         }
         TODO("Not yet implemented")
     }
@@ -145,5 +145,5 @@ fun fromCCFormulaOr(fml: FOr, manager: ContextManager?, registry: BFuncRegistry?
     fromCCFormula(fml.subformulas.first(), manager, registry),
     fromCCFormula(fml.subformulas.last(), manager, registry),
     manager,
-    fml.disableConfigItems
+    fml.repairConfig
 )

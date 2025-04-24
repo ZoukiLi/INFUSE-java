@@ -6,17 +6,17 @@ import com.constraint.resolution.*
 import com.constraint.resolution.bfunc.BFuncRegistry
 
 data class NotFormula(
-    val subFormula: IFormula, val manager: ContextManager?, val userConfig: List<RepairDisableConfigItem>? = null
+    val subFormula: IFormula, val manager: ContextManager?, val userConfig: RepairConfig? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap) = !subFormula.evaluate(assignment, patternMap)
 
     override fun repairF2T(
         assignment: Assignment, patternMap: PatternMap, lk: Boolean
-    ) = subFormula.repairT2F(assignment, patternMap, lk).filterImmutable(userConfig, manager)
+    ) = subFormula.repairT2F(assignment, patternMap, lk).filterImmutable(userConfig?.items, manager)
 
     override fun repairT2F(
         assignment: Assignment, patternMap: PatternMap, lk: Boolean
-    ) = subFormula.repairF2T(assignment, patternMap, lk).filterImmutable(userConfig, manager)
+    ) = subFormula.repairF2T(assignment, patternMap, lk).filterImmutable(userConfig?.items, manager)
 
     override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         return subFormula.repairT2FSeq(assignment, patternMap, lk)
@@ -62,10 +62,10 @@ data class NotFormula(
     override fun evalRCTNode(rctNode: RCTNode) = !rctNode.children.first().getTruth()
 
     override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) =
-        rctNode.children.first().repairT2F(lk).filterImmutable(userConfig, manager)
+        rctNode.children.first().repairT2F(lk).filterImmutable(userConfig?.items, manager)
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) =
-        rctNode.children.first().repairF2T(lk).filterImmutable(userConfig, manager)
+        rctNode.children.first().repairF2T(lk).filterImmutable(userConfig?.items, manager)
 
     /**
      * 生成使NOT公式为真的Z3条件
@@ -87,4 +87,4 @@ data class NotFormula(
 }
 
 fun fromCCFormulaNot(fml: FNot, manager: ContextManager?, registry: BFuncRegistry? = null) =
-    NotFormula(fromCCFormula(fml.subformula, manager, registry), manager, fml.disableConfigItems)
+    NotFormula(fromCCFormula(fml.subformula, manager, registry), manager, fml.repairConfig)

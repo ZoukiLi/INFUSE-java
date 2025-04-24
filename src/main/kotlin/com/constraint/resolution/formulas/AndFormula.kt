@@ -6,7 +6,7 @@ import com.constraint.resolution.*
 import com.constraint.resolution.bfunc.BFuncRegistry
 
 data class AndFormula(
-    val left: IFormula, val right: IFormula, val manager: ContextManager?, val userConfig: List<RepairDisableConfigItem>? = null
+    val left: IFormula, val right: IFormula, val manager: ContextManager?, val userConfig: RepairConfig? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap) =
         left.evaluate(assignment, patternMap) and right.evaluate(assignment, patternMap)
@@ -28,7 +28,7 @@ data class AndFormula(
 
                 else -> RepairSuite()
             }
-            return result.filterImmutable(userConfig, manager)
+            return result.filterImmutable(userConfig?.items, manager)
         }
         TODO("Locked repair not implemented for AndFormula")
     }
@@ -36,7 +36,7 @@ data class AndFormula(
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean) =
         // Repair both branched formulas when both are true
         (left.repairT2F(assignment, patternMap, lk) or right.repairT2F(assignment, patternMap, lk)).filterImmutable(
-                userConfig,
+                userConfig?.items,
                 manager
             )
 
@@ -63,14 +63,14 @@ data class AndFormula(
                 // Both true, nothing to do
                 else -> RepairSuite(setOf())
             }
-            return result.filterImmutable(userConfig, manager)
+            return result.filterImmutable(userConfig?.items, manager)
         }
         TODO("Not yet implemented")
     }
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) =
         rctNode.children[0].repairT2F(lk) or rctNode.children[1].repairT2F(lk)
-            .filterImmutable(userConfig, manager)
+            .filterImmutable(userConfig?.items, manager)
 
     override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         if (!lk) {
@@ -89,7 +89,7 @@ data class AndFormula(
                 // Both true, nothing to do
                 else -> sequenceOf()
             }
-            return filterImmutable(userConfig, manager, result)
+            return filterImmutable(userConfig?.items, manager, result)
         }
         TODO("Lock repair not implemented for AndFormula")
     }
@@ -158,5 +158,5 @@ fun fromCCFormulaAnd(fml: FAnd, manager: ContextManager?, registry: BFuncRegistr
     fromCCFormula(fml.subformulas.first(), manager, registry),
     fromCCFormula(fml.subformulas.last(), manager, registry),
     manager,
-    fml.disableConfigItems
+    fml.repairConfig
 )

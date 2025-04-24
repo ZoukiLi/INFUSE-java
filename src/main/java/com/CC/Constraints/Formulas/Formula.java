@@ -6,6 +6,7 @@ import com.CC.Constraints.Runtime.RuntimeNode;
 import com.CC.Contexts.ContextChange;
 import com.CC.Middleware.Checkers.Checker;
 import com.CC.Middleware.Schedulers.Scheduler;
+import com.constraint.resolution.RepairConfig;
 import com.constraint.resolution.RepairDisableConfigItem;
 
 import java.util.List;
@@ -17,7 +18,7 @@ public abstract class Formula {
 
     private Formula_Type formula_type;
     private boolean Affected;
-    private List<RepairDisableConfigItem> disableConfigItems;
+    private RepairConfig repairConfig;
 
     public Formula_Type getFormula_type() {
         return formula_type;
@@ -25,8 +26,8 @@ public abstract class Formula {
     public boolean isAffected() {
         return Affected;
     }
-    public List<RepairDisableConfigItem> getDisableConfigItems() {
-        return disableConfigItems;
+    public RepairConfig getRepairConfig() {
+        return repairConfig;
     }
 
     public void setAffected(boolean affected) {
@@ -35,8 +36,8 @@ public abstract class Formula {
     public void setFormula_type(Formula_Type formula_type) {
         this.formula_type = formula_type;
     }
-    public void setDisableConfigItems(List<RepairDisableConfigItem> disableConfigItems) {
-        this.disableConfigItems = disableConfigItems;
+    public void setRepairConfig(RepairConfig repairConfig) {
+        this.repairConfig = repairConfig;
     }
 
     //为syntax tree输出

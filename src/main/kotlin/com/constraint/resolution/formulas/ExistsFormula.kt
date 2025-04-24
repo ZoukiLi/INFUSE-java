@@ -13,7 +13,7 @@ data class ExistsFormula(
     val filter: String?,
     val filterDep: String?,
     val manager: ContextManager?,
-    val userConfig: List<RepairDisableConfigItem>? = null
+    val userConfig: RepairConfig? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap): Boolean {
         val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return false
@@ -36,7 +36,7 @@ data class ExistsFormula(
         }
 
         val repairSuite = revertSuite or newCtxSuite
-        return repairSuite.filterImmutable(userConfig, manager)
+        return repairSuite.filterImmutable(userConfig?.items, manager)
     }
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
@@ -47,7 +47,7 @@ data class ExistsFormula(
             val removalSuite = RepairSuite(RemovalRepairAction(it, pattern), weight)
             val revertSuite = subFormula.repairT2F(bind(assignment, variable, it), patternMap, lk)
             removalSuite or revertSuite
-        }.fold(RepairSuite()) { acc, suite -> acc and suite }.filterImmutable(userConfig, manager)
+        }.fold(RepairSuite()) { acc, suite -> acc and suite }.filterImmutable(userConfig?.items, manager)
     }
 
     override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
@@ -62,8 +62,11 @@ data class ExistsFormula(
             false -> cartesianProduct(addSeq, subFormula.repairF2TSeq(bindNew, patternMap, lk))
         }
 
-        val repairSeq = chain(chain(revertSeqs), newCtxSeq)
-        return filterImmutable(userConfig, manager, repairSeq)
+        val repairSeq = when (userConfig?.prefer) {
+            PREFER_BRANCH -> chain(newCtxSeq, chain(revertSeqs))
+            else -> chain(chain(revertSeqs), newCtxSeq)
+        }
+        return repairSeq.filterByConfig(userConfig, manager)
     }
 
     override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
@@ -72,11 +75,14 @@ data class ExistsFormula(
         val repairSeqs = filteredPattern.filter { subFormula.evaluate(bind(assignment, variable, it), patternMap) }.map {
             val removalSeq = sequenceOf(RepairCase(RemovalRepairAction(it, pattern), weight))
             val revertSeq = subFormula.repairT2FSeq(bind(assignment, variable, it), patternMap, lk)
-            chain(revertSeq, removalSeq)
+            when (userConfig?.prefer) {
+                PREFER_BRANCH -> chain(removalSeq, revertSeq)
+                else -> chain(revertSeq, removalSeq)
+            }
         }
         val results = cartesianProduct(repairSeqs)
 
-        return filterImmutable(userConfig, manager, results)
+        return results.filterByConfig(userConfig, manager)
     }
 
     override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
@@ -148,7 +154,7 @@ data class ExistsFormula(
             it.repairF2T(lk)
         }.fold(RepairSuite()) { acc, suite -> acc or suite } or repairByDefaultContext(rctNode, lk)
         return repairSuite.filterImmutable(
-            userConfig, manager
+            userConfig?.items, manager
         )
     }
 
@@ -156,7 +162,7 @@ data class ExistsFormula(
         it.repairT2F(lk) or RepairSuite(
             RemovalRepairAction(it.assignment.getValue(variable), pattern), weight
         )
-    }.fold(RepairSuite()) { acc, suite -> acc and suite }.filterImmutable(userConfig, manager)
+    }.fold(RepairSuite()) { acc, suite -> acc and suite }.filterImmutable(userConfig?.items, manager)
 
     private fun repairByDefaultContext(rctNode: RCTNode, lk: Boolean): RepairSuite {
         val newContext = manager?.constructContext(mapOf("name" to "new")) ?: makeContext(mapOf())
@@ -232,5 +238,5 @@ fun fromCCFormulaExists(fml: FExists, manager: ContextManager?, registry: BFuncR
     fml.filter,
     fml.filterDep,
     manager,
-    fml.disableConfigItems
+    fml.repairConfig
 )

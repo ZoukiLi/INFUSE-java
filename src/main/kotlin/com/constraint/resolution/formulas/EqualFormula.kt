@@ -9,7 +9,7 @@ import kotlin.math.absoluteValue
 
 data class EqualFormula(
     val var1: Variable, val attr1: String, val var2: Variable, val attr2: String, val weight: Double = 1.0,
-    val manager: ContextManager?, val disableConfigItems: List<RepairDisableConfigItem>? = null
+    val manager: ContextManager?, val userConfig: RepairConfig? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap): Boolean {
         val value1 = assignment[var1]?.attributes?.get(attr1) ?: return false
@@ -27,7 +27,7 @@ data class EqualFormula(
             assignment.getValue(var2), attr2,
         ), weight
 
-    ).filterImmutable(disableConfigItems, manager)
+    ).filterImmutable(userConfig?.items, manager)
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean) = RepairSuite(
         // One repair case: differentiate the values of the two attributes
@@ -35,7 +35,7 @@ data class EqualFormula(
             assignment.getValue(var1), attr1,
             assignment.getValue(var2), attr2,
         ), weight
-    ).filterImmutable(disableConfigItems, manager)
+    ).filterImmutable(userConfig?.items, manager)
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
         RCTNode(this, assignment, patternMap, ccRtNode)
@@ -56,7 +56,7 @@ data class EqualFormula(
             rctNode.assignment.getValue(var1), attr1,
             rctNode.assignment.getValue(var2), attr2,
         ), weight
-    ).filterImmutable(disableConfigItems, manager)
+    ).filterImmutable(userConfig?.items, manager)
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) = RepairSuite(
         // One repair case: differentiate the values of the two attributes
@@ -64,20 +64,20 @@ data class EqualFormula(
             rctNode.assignment.getValue(var1), attr1,
             rctNode.assignment.getValue(var2), attr2,
         ), weight
-    ).filterImmutable(disableConfigItems, manager)
+    ).filterImmutable(userConfig?.items, manager)
 
     override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         val action = EqualizationRepairAction(assignment.getValue(var1), attr1, assignment.getValue(var2), attr2)
         val action2 = EqualizationRepairAction(assignment.getValue(var2), attr2, assignment.getValue(var1), attr1)
         val rst = sequenceOf(RepairCase(action, weight), RepairCase(action2, weight))
-        return filterImmutable(disableConfigItems, manager, rst)
+        return filterImmutable(userConfig?.items, manager, rst)
     }
 
     override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         val action = DifferentiationRepairAction(assignment.getValue(var1), attr1, assignment.getValue(var2), attr2)
         val action2 = DifferentiationRepairAction(assignment.getValue(var2), attr2, assignment.getValue(var1), attr1)
         val rst = sequenceOf(RepairCase(action, weight), RepairCase(action2, weight))
-        return filterImmutable(disableConfigItems, manager, rst)
+        return filterImmutable(userConfig?.items, manager, rst)
     }
 
     override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
@@ -161,7 +161,7 @@ data class EqualFormula(
 }
 
 data class EqualConstFormula(val var1: Variable, val attr1: String, val value: String, val weight: Double = 1.0,
-    val manager: ContextManager?, val disableConfigItems: List<RepairDisableConfigItem>? = null
+    val manager: ContextManager?, val userConfig: RepairConfig? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap): Boolean {
         val value1 = assignment[var1]?.attributes?.get(attr1) ?: return false
@@ -176,7 +176,7 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
             assignment.getValue(var1), attr1,
             value,
         ), weight
-    ).filterImmutable(disableConfigItems, manager)
+    ).filterImmutable(userConfig?.items, manager)
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean) = RepairSuite(
         // One repair case: differentiate the constant value with the value of the attribute
@@ -184,7 +184,7 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
             assignment.getValue(var1), attr1,
             value,
         ), weight
-    ).filterImmutable(disableConfigItems, manager)
+    ).filterImmutable(userConfig?.items, manager)
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?) =
         RCTNode(this, assignment, patternMap, ccRtNode)
@@ -204,7 +204,7 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
             rctNode.assignment.getValue(var1), attr1,
             value,
         ), weight
-    ).filterImmutable(disableConfigItems, manager)
+    ).filterImmutable(userConfig?.items, manager)
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean) = RepairSuite(
         // One repair case: differentiate the constant value with the value of the attribute
@@ -212,18 +212,18 @@ data class EqualConstFormula(val var1: Variable, val attr1: String, val value: S
             rctNode.assignment.getValue(var1), attr1,
             value,
         ), weight
-    ).filterImmutable(disableConfigItems, manager)
+    ).filterImmutable(userConfig?.items, manager)
 
     override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         val action = EqualizationConstRepairAction(assignment.getValue(var1), attr1, value)
         val rst = sequenceOf(RepairCase(action, weight))
-        return filterImmutable(disableConfigItems, manager, rst)
+        return filterImmutable(userConfig?.items, manager, rst)
     }
 
     override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         val action = DifferentiationConstRepairAction(assignment.getValue(var1), attr1, value)
         val rst = sequenceOf(RepairCase(action, weight))
-        return filterImmutable(disableConfigItems, manager, rst)
+        return filterImmutable(userConfig?.items, manager, rst)
     }
 
     override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
@@ -283,7 +283,7 @@ fun fromCCFormulaBfunc(fml: FBfunc, manager: ContextManager?, registry: BFuncReg
         val attr1 = names[2]
         val value = names[3]
         val weight = 1.0
-        EqualConstFormula(var1, attr1, value, weight, manager, fml.disableConfigItems)
+        EqualConstFormula(var1, attr1, value, weight, manager, fml.repairConfig)
     }
     else {
         val var1 = fml.params.getValue("var1")
@@ -291,6 +291,6 @@ fun fromCCFormulaBfunc(fml: FBfunc, manager: ContextManager?, registry: BFuncReg
         val attr1 = names[1]
         val attr2 = names[2]
         val weight = 1.0
-        EqualFormula(var1, attr1, var2, attr2, weight, manager, fml.disableConfigItems)
+        EqualFormula(var1, attr1, var2, attr2, weight, manager, fml.repairConfig)
     }
 }

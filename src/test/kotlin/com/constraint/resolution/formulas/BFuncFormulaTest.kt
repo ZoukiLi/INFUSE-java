@@ -1,14 +1,10 @@
 package com.constraint.resolution.formulas
 
 import com.CC.Constraints.Rules.RuleHandler
-import com.constraint.resolution.Context
-import com.constraint.resolution.ContextManager
-import com.constraint.resolution.bfunc.BFuncParser
+import com.constraint.resolution.*
 import com.constraint.resolution.bfunc.BFuncDefinition
+import com.constraint.resolution.bfunc.BFuncParser
 import com.constraint.resolution.bfunc.BFuncRegistry
-import com.constraint.resolution.fromCCFormula
-import com.constraint.resolution.genZ3PyCode
-import com.constraint.resolution.runPyCode
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,7 +12,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class BFuncFormulaTest {
-    
+
     private val testJsonLessThan = """
     {
         "name": "less_than_x_y",
@@ -41,14 +37,14 @@ class BFuncFormulaTest {
         }
     }
     """.trimIndent()
-    
+
     @Test
     fun testBFuncFormulaEvaluation() {
         // 创建BFuncDefinition
         val parser = BFuncParser()
         val bfunc = parser.parse(testJsonLessThan)
         val definition = BFuncDefinition(bfunc)
-        
+
         // 创建BFuncFormula
         val formula = BFuncFormula(
             funcName = "less_than_x_y",
@@ -59,32 +55,32 @@ class BFuncFormulaTest {
             expression = definition.parseExpression(),
             manager = null
         )
-        
+
         // 创建上下文
         val context1 = Context(1, mapOf("x" to ("5" to true), "name" to ("a" to true)), null)
         val context2 = Context(2, mapOf("y" to ("10" to true), "name" to ("b" to true)), null)
         val context3 = Context(3, mapOf("y" to ("3" to true), "name" to ("c" to true)), null)
-        
+
         // 测试条件成立的情况
         val assignment1 = mapOf("a" to context1, "b" to context2)
         assertTrue(formula.evaluate(assignment1, emptyMap()))
-        
+
         // 测试条件不成立的情况
         val assignment2 = mapOf("a" to context1, "b" to context3)
         assertFalse(formula.evaluate(assignment2, emptyMap()))
     }
-    
+
     @Test
     fun testBFuncRegistry() {
         // 创建注册表
         val registry = BFuncRegistry()
-        
+
         // 注册函数定义
         val parser = BFuncParser()
         val bfunc = parser.parse(testJsonLessThan)
         val definition = BFuncDefinition(bfunc)
         registry.registerBFunc(definition)
-        
+
         // 获取函数定义
         val retrievedDef = registry.getBFuncDefinition("less_than_x_y")
         assertEquals("less_than_x_y", retrievedDef?.name)
@@ -145,12 +141,12 @@ class BFuncBaseTest {
 
         lines.subList(1, lines.size).filter { it.startsWith("#") }.filterNot { it.isBlank() }
             .forEach { line ->
-            val values = line.split(",")
-            val pattern = values[patIndex].trim('#')
-            val attributes = attrIndices.associate { header[it] to values[it] }
-            val context = manager.constructContext(attributes)
-            manager.addContextToPattern(context, listOf(pattern))
-        }
+                val values = line.split(",")
+                val pattern = values[patIndex].trim('#')
+                val attributes = attrIndices.associate { header[it] to values[it] }
+                val context = manager.constructContext(attributes)
+                manager.addContextToPattern(context, listOf(pattern))
+            }
     }
 
     @Test
@@ -172,11 +168,14 @@ class BFuncBaseTest {
                 val repairSuite = formula.repairF2TSeq(mapOf(), manager.patternMap)
                 println("Repair suite: $repairSuite")
                 if (repairSuite.any()) {
-                    val cases = repairSuite.take(10)
-                    val case = cases.minBy { it.actions.size }
-                    println(case.display())
-                    rstFile.appendText(case.display())
-                    rstFile.appendText("\n")
+                    // remove all same cases
+                    val cases1 = repairSuite.toList()
+                    val cases = cases1.filter { it.actions.isNotEmpty() }.distinctBy { it.actions }.sortedBy { it.earliestId() }
+                    cases.forEachIndexed { i, case ->
+                        rstFile.appendText("Case $i:\n")
+                        rstFile.appendText(case.display())
+                        rstFile.appendText("\n")
+                    }
                 }
             }
         }

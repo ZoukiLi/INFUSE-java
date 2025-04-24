@@ -16,7 +16,7 @@ data class BFuncFormula(
     val expression: BFuncExpression,
     val weight: Double = 1.0,
     val manager: ContextManager?,
-    val disableConfigItems: List<RepairDisableConfigItem>? = null
+    val userConfig: RepairConfig? = null
 ) : IFormula {
     
     override fun evaluate(assignment: Assignment, patternMap: PatternMap): Boolean {
@@ -30,13 +30,13 @@ data class BFuncFormula(
     override fun repairF2T(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
         // 基于Z3求解生成修复方案
         val repairs = expression.generateRepairF2T(parameters, assignment, weight)
-        return repairs.filterImmutable(disableConfigItems, manager)
+        return repairs.filterImmutable(userConfig?.items, manager)
     }
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
         // 基于Z3求解生成修复方案
         val repairs = expression.generateRepairT2F(parameters, assignment, weight)
-        return repairs.filterImmutable(disableConfigItems, manager)
+        return repairs.filterImmutable(userConfig?.items, manager)
     }
 
     override fun createRCTNode(assignment: Assignment, patternMap: PatternMap, ccRtNode: RuntimeNode?): RCTNode {
@@ -56,22 +56,22 @@ data class BFuncFormula(
 
     override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean): RepairSuite {
         val repairs = expression.generateRepairF2T(parameters, rctNode.assignment, weight)
-        return repairs.filterImmutable(disableConfigItems, manager)
+        return repairs.filterImmutable(userConfig?.items, manager)
     }
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean): RepairSuite {
         val repairs = expression.generateRepairT2F(parameters, rctNode.assignment, weight)
-        return repairs.filterImmutable(disableConfigItems, manager)
+        return repairs.filterImmutable(userConfig?.items, manager)
     }
 
     override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         val repairs = expression.generateRepairF2TSeq(parameters, assignment, weight)
-        return filterImmutable(disableConfigItems, manager, repairs)
+        return filterImmutable(userConfig?.items, manager, repairs)
     }
 
     override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
         val repairs = expression.generateRepairT2FSeq(parameters, assignment, weight)
-        return filterImmutable(disableConfigItems, manager, repairs)
+        return filterImmutable(userConfig?.items, manager, repairs)
     }
 
     override fun initVerifyNode(ccRtNode: RuntimeNode): VerifyNode {
@@ -146,7 +146,7 @@ fun createBFuncFormula(fml: FBfunc, bfuncDef: BFuncDefinition, manager: ContextM
         expression = bfuncDef.parseExpression(),
         weight = 1.0,
         manager = manager,
-        disableConfigItems = fml.disableConfigItems
+        userConfig = fml.repairConfig
     )
 }
 
@@ -163,14 +163,14 @@ fun fromCCFormulaBfuncGeneral(fml: FBfunc, manager: ContextManager?, registry: B
                 val attr1 = names[2]
                 val value = names[3]
                 val weight = 1.0
-                EqualConstFormula(var1, attr1, value, weight, manager, fml.disableConfigItems)
+                EqualConstFormula(var1, attr1, value, weight, manager, fml.repairConfig)
             } else {
                 val var1 = fml.params.getValue("var1")
                 val var2 = fml.params.getValue("var2")
                 val attr1 = names[1]
                 val attr2 = names[2]
                 val weight = 1.0
-                EqualFormula(var1, attr1, var2, attr2, weight, manager, fml.disableConfigItems)
+                EqualFormula(var1, attr1, var2, attr2, weight, manager, fml.repairConfig)
             }
         }
     }

@@ -3,6 +3,7 @@ package com.CC.Constraints.Rules;
 import com.CC.Constraints.Formulas.*;
 import com.CC.Constraints.Runtime.RuntimeNode;
 import com.CC.Util.Loggable;
+import com.constraint.resolution.RepairConfig;
 import com.constraint.resolution.RepairDisableConfigItem;
 import com.constraint.resolution.RepairType;
 import org.dom4j.Document;
@@ -24,11 +25,11 @@ public class RuleHandler implements Loggable {
     }
 
     public void buildRules(String filename) throws Exception {
-        try(InputStream inputStream = Files.newInputStream(Paths.get(filename))) {
+        try (InputStream inputStream = Files.newInputStream(Paths.get(filename))) {
             SAXReader saxReader = new SAXReader();
             Document document = saxReader.read(inputStream);
             List<Element> eRuleList = document.getRootElement().elements();
-            for(Element eRule: eRuleList){
+            for (Element eRule : eRuleList) {
                 List<Element> eLabelList = eRule.elements();
                 assert eLabelList.size() == 2 || eLabelList.size() == 3;
                 //id
@@ -36,7 +37,7 @@ public class RuleHandler implements Loggable {
                 Rule newRule = new Rule(eLabelList.get(0).getText());
                 // formula
                 assert eLabelList.get(1).getName().equals("formula");
-                Element eFormula =  eLabelList.get(1).elements().get(0);
+                Element eFormula = eLabelList.get(1).elements().get(0);
                 newRule.setFormula(resolveFormula(eFormula, newRule.getVarPatternMap(), newRule.getPatToFormula(), newRule.getPatToRuntimeNode(), 0));
                 setPatWithDepth(newRule.getFormula(), newRule.getPatToDepth(), newRule.getDepthToPat());
                 ruleMap.put(newRule.getRule_id(), newRule);
@@ -45,46 +46,57 @@ public class RuleHandler implements Loggable {
     }
 
     @Nullable
-    private List<RepairDisableConfigItem> getDisableConfigItems(Element element){
+    private RepairConfig getRepairConfig(Element element) {
         List<RepairDisableConfigItem> retList = new ArrayList<>();
         if (element.attributeValue("non-updatable") != null) {
             var nonUpdatable = element.attributeValue("non-updatable").split(",");
-            for(var item : nonUpdatable){
+            for (var item : nonUpdatable) {
                 retList.add(new RepairDisableConfigItem(RepairType.UPDATE, item));
             }
         }
         if (element.attributeValue("non-addable") != null) {
             var nonAddable = element.attributeValue("non-addable").split(",");
-            for(var item : nonAddable){
+            for (var item : nonAddable) {
                 retList.add(new RepairDisableConfigItem(RepairType.ADDITION, item));
             }
         }
         if (element.attributeValue("non-removable") != null) {
             var nonRemovable = element.attributeValue("non-removable").split(",");
-            for(var item : nonRemovable){
+            for (var item : nonRemovable) {
                 retList.add(new RepairDisableConfigItem(RepairType.REMOVAL, item));
             }
         }
         if (element.attributeValue("immutable") != null) {
             var immutable = element.attributeValue("immutable").split(",");
-            for(var item : immutable){
+            for (var item : immutable) {
                 retList.add(new RepairDisableConfigItem(RepairType.UPDATE, item));
                 retList.add(new RepairDisableConfigItem(RepairType.ADDITION, item));
                 retList.add(new RepairDisableConfigItem(RepairType.REMOVAL, item));
             }
         }
+        String prefer = element.attributeValue("prefer");
+        int maxRemove = element.attributeValue("max-remove") == null ? Integer.MAX_VALUE : Integer.parseInt(element.attributeValue("max-remove"));
+        int maxAdd = element.attributeValue("max-add") == null ? Integer.MAX_VALUE : Integer.parseInt(element.attributeValue("max-add"));
+        int maxUpdate = element.attributeValue("max-update") == null ? Integer.MAX_VALUE : Integer.parseInt(element.attributeValue("max-update"));
+        int maxCaseSize = element.attributeValue("max-case-size") == null ? Integer.MAX_VALUE : Integer.parseInt(element.attributeValue("max-case-size"));
+        int maxSuiteSize = element.attributeValue("max-suite-size") == null ? Integer.MAX_VALUE : Integer.parseInt(element.attributeValue("max-suite-size"));
 
-        if (retList.isEmpty()){
-            return null;
-        }
-        return retList;
+        return new RepairConfig(
+                retList,
+                maxAdd,
+                maxUpdate,
+                maxRemove,
+                prefer,
+                maxCaseSize,
+                maxSuiteSize
+        );
     }
 
     private Formula resolveFormula(Element eFormula, Map<String, String> varPatternMap, Map<String, Formula> patToFormula,
-                                   Map<String, Set<RuntimeNode>> patToRunTimeNode, int depth){
+                                   Map<String, Set<RuntimeNode>> patToRunTimeNode, int depth) {
         Formula retFormula = null;
-        switch (eFormula.getName()){
-            case "forall":{
+        switch (eFormula.getName()) {
+            case "forall": {
                 FForall tmpForall = new FForall(eFormula.attributeValue("var"), eFormula.attributeValue("in"));
                 // forall has only one kid
                 tmpForall.setSubformula(resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
@@ -95,11 +107,11 @@ public class RuleHandler implements Loggable {
                 tmpForall.setFilter(eFormula.attributeValue("filter"));
                 tmpForall.setFilterDep(eFormula.attributeValue("filterDep"));
                 // Add immutable pattern if exists
-                tmpForall.setDisableConfigItems(getDisableConfigItems(eFormula));
+                tmpForall.setRepairConfig(getRepairConfig(eFormula));
                 retFormula = tmpForall;
                 break;
             }
-            case "exists":{
+            case "exists": {
                 FExists tmpExists = new FExists(eFormula.attributeValue("var"), eFormula.attributeValue("in"));
                 // exists has only one kid
                 tmpExists.setSubformula(resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
@@ -109,64 +121,64 @@ public class RuleHandler implements Loggable {
                 tmpExists.setFilter(eFormula.attributeValue("filter"));
                 tmpExists.setFilterDep(eFormula.attributeValue("filterDep"));
                 // Add immutable pattern if exists
-                tmpExists.setDisableConfigItems(getDisableConfigItems(eFormula));
+                tmpExists.setRepairConfig(getRepairConfig(eFormula));
                 retFormula = tmpExists;
                 break;
             }
-            case "and":{
+            case "and": {
                 FAnd tmpAnd = new FAnd();
                 // and has two kids
                 tmpAnd.replaceSubformula(0, resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 tmpAnd.replaceSubformula(1, resolveFormula(eFormula.elements().get(1), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 // Add immutable pattern if exists
-                tmpAnd.setDisableConfigItems(getDisableConfigItems(eFormula));
+                tmpAnd.setRepairConfig(getRepairConfig(eFormula));
                 retFormula = tmpAnd;
                 break;
             }
-            case "or" :{
+            case "or": {
                 FOr tmpOr = new FOr();
                 // or has two kids
                 tmpOr.replaceSubformula(0, resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 tmpOr.replaceSubformula(1, resolveFormula(eFormula.elements().get(1), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 // Add immutable pattern if exists
-                tmpOr.setDisableConfigItems(getDisableConfigItems(eFormula));
+                tmpOr.setRepairConfig(getRepairConfig(eFormula));
                 retFormula = tmpOr;
                 break;
             }
-            case "implies" :{
+            case "implies": {
                 FImplies tmpImplies = new FImplies();
                 // implies has two kids
                 tmpImplies.replaceSubformula(0, resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 tmpImplies.replaceSubformula(1, resolveFormula(eFormula.elements().get(1), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 // Add immutable pattern if exists
-                tmpImplies.setDisableConfigItems(getDisableConfigItems(eFormula));
+                tmpImplies.setRepairConfig(getRepairConfig(eFormula));
                 retFormula = tmpImplies;
                 break;
             }
-            case "not" :{
+            case "not": {
                 FNot tmpNot = new FNot();
                 // not has only one kid
                 tmpNot.setSubformula(resolveFormula(eFormula.elements().get(0), varPatternMap, patToFormula, patToRunTimeNode, depth + 1));
                 // Add immutable pattern if exists
-                tmpNot.setDisableConfigItems(getDisableConfigItems(eFormula));
+                tmpNot.setRepairConfig(getRepairConfig(eFormula));
                 retFormula = tmpNot;
                 break;
             }
-            case "bfunc" :{
+            case "bfunc": {
                 FBfunc tmpBfunc = new FBfunc(eFormula.attributeValue("name"));
                 // bfunc has several params
                 List<Element> paramElementList = eFormula.elements();
-                for(Element paramElement : paramElementList){
+                for (Element paramElement : paramElementList) {
                     // pos and var
                     var pos = paramElement.attributeValue("pos");
                     // if pos is a number, add a prefix "v" to it
-                    if(pos.matches("\\d+")){
+                    if (pos.matches("\\d+")) {
                         pos = "v" + pos;
                     }
                     tmpBfunc.addParam(pos, paramElement.attributeValue("var"));
                 }
                 // Add immutable pattern if exists
-                tmpBfunc.setDisableConfigItems(getDisableConfigItems(eFormula));
+                tmpBfunc.setRepairConfig(getRepairConfig(eFormula));
                 retFormula = tmpBfunc;
                 break;
             }
@@ -177,33 +189,33 @@ public class RuleHandler implements Loggable {
         return retFormula;
     }
 
-    private int setPatWithDepth(Formula formula, Map<String,Integer> patToDepth, Map<Integer, String> depthToPat){
+    private int setPatWithDepth(Formula formula, Map<String, Integer> patToDepth, Map<Integer, String> depthToPat) {
         int maxDepth;
-        switch (formula.getFormula_type()){
+        switch (formula.getFormula_type()) {
             case FORALL:
-                maxDepth = setPatWithDepth(((FForall)formula).getSubformula(), patToDepth, depthToPat);
-                patToDepth.put(((FForall)formula).getPattern_id(), maxDepth);
-                depthToPat.put(maxDepth, ((FForall)formula).getPattern_id());
+                maxDepth = setPatWithDepth(((FForall) formula).getSubformula(), patToDepth, depthToPat);
+                patToDepth.put(((FForall) formula).getPattern_id(), maxDepth);
+                depthToPat.put(maxDepth, ((FForall) formula).getPattern_id());
                 return maxDepth + 1;
             case EXISTS:
-                maxDepth = setPatWithDepth(((FExists)formula).getSubformula(), patToDepth, depthToPat);
-                patToDepth.put(((FExists)formula).getPattern_id(), maxDepth);
-                depthToPat.put(maxDepth, ((FExists)formula).getPattern_id());
+                maxDepth = setPatWithDepth(((FExists) formula).getSubformula(), patToDepth, depthToPat);
+                patToDepth.put(((FExists) formula).getPattern_id(), maxDepth);
+                depthToPat.put(maxDepth, ((FExists) formula).getPattern_id());
                 return maxDepth + 1;
             case AND:
-                maxDepth = setPatWithDepth(((FAnd)formula).getSubformulas()[0], patToDepth, depthToPat);
-                maxDepth = Math.max(maxDepth, setPatWithDepth(((FAnd)formula).getSubformulas()[1], patToDepth, depthToPat));
+                maxDepth = setPatWithDepth(((FAnd) formula).getSubformulas()[0], patToDepth, depthToPat);
+                maxDepth = Math.max(maxDepth, setPatWithDepth(((FAnd) formula).getSubformulas()[1], patToDepth, depthToPat));
                 return maxDepth + 1;
             case OR:
-                maxDepth = setPatWithDepth(((FOr)formula).getSubformulas()[0], patToDepth, depthToPat);
-                maxDepth = Math.max(maxDepth, setPatWithDepth(((FOr)formula).getSubformulas()[1], patToDepth, depthToPat));
+                maxDepth = setPatWithDepth(((FOr) formula).getSubformulas()[0], patToDepth, depthToPat);
+                maxDepth = Math.max(maxDepth, setPatWithDepth(((FOr) formula).getSubformulas()[1], patToDepth, depthToPat));
                 return maxDepth + 1;
             case IMPLIES:
-                maxDepth = setPatWithDepth(((FImplies)formula).getSubformulas()[0], patToDepth, depthToPat);
-                maxDepth = Math.max(maxDepth, setPatWithDepth(((FImplies)formula).getSubformulas()[1], patToDepth, depthToPat));
+                maxDepth = setPatWithDepth(((FImplies) formula).getSubformulas()[0], patToDepth, depthToPat);
+                maxDepth = Math.max(maxDepth, setPatWithDepth(((FImplies) formula).getSubformulas()[1], patToDepth, depthToPat));
                 return maxDepth + 1;
             case NOT:
-                maxDepth = setPatWithDepth(((FNot)formula).getSubformula(), patToDepth, depthToPat);
+                maxDepth = setPatWithDepth(((FNot) formula).getSubformula(), patToDepth, depthToPat);
                 return maxDepth + 1;
             case BFUNC:
                 return 1;

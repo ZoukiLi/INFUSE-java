@@ -9,14 +9,14 @@ data class ImpliesFormula(
     val left: IFormula,
     val right: IFormula,
     val manager: ContextManager?,
-    val userConfig: List<RepairDisableConfigItem>? = null
+    val userConfig: RepairConfig? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap) =
         !left.evaluate(assignment, patternMap) or right.evaluate(assignment, patternMap)
 
     override fun repairF2T(assignment: Assignment, patternMap: PatternMap, lk: Boolean) =
         (left.repairT2F(assignment, patternMap, lk) or right.repairF2T(assignment, patternMap, lk)).filterImmutable(
-            userConfig,
+            userConfig?.items,
             manager
         )
 
@@ -35,7 +35,7 @@ data class ImpliesFormula(
                 false to false -> left.repairF2T(assignment, patternMap, lk)
                 else -> RepairSuite(setOf())
             }
-            return suite.filterImmutable(userConfig, manager)
+            return suite.filterImmutable(userConfig?.items, manager)
         }
         TODO("Locked repairs not implemented for ImpliesFormula")
     }
@@ -59,7 +59,7 @@ data class ImpliesFormula(
                 false to false -> left.repairF2TSeq(assignment, patternMap, lk)
                 else -> sequenceOf()
             }
-            return filterImmutable(userConfig, manager, result)
+            return filterImmutable(userConfig?.items, manager, result)
         }
         TODO("Locked repairs not implemented for ImpliesFormula")
     }
@@ -107,7 +107,7 @@ data class ImpliesFormula(
     override fun evalRCTNode(rctNode: RCTNode) = !rctNode.children[0].getTruth() or rctNode.children[1].getTruth()
 
     override fun repairNodeF2T(rctNode: RCTNode, lk: Boolean) =
-        (rctNode.children[1].repairF2T(lk) or rctNode.children[0].repairT2F(lk)).filterImmutable(userConfig, manager)
+        (rctNode.children[1].repairF2T(lk) or rctNode.children[0].repairT2F(lk)).filterImmutable(userConfig?.items, manager)
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean): RepairSuite {
         if (!lk) {
@@ -119,7 +119,7 @@ data class ImpliesFormula(
                 Pair(false, false) -> leftNode.repairF2T(lk)
                 else -> RepairSuite(setOf())
             }
-            return suite.filterImmutable(userConfig, manager)
+            return suite.filterImmutable(userConfig?.items, manager)
         }
         TODO("Not yet implemented")
     }
@@ -151,5 +151,5 @@ fun fromCCFormulaImplies(fml: FImplies, manager: ContextManager?, registry: BFun
         fromCCFormula(fml.subformulas.first(), manager, registry),
         fromCCFormula(fml.subformulas.last(), manager, registry),
         manager,
-        fml.disableConfigItems
+        fml.repairConfig
     )

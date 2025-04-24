@@ -16,7 +16,7 @@ data class ForallFormula(
     val filter: String?,
     val filterDep: String?,
     val manager: ContextManager?,
-    val userConfig: List<RepairDisableConfigItem>? = null
+    val userConfig: RepairConfig? = null
 ) : IFormula {
     override fun evaluate(assignment: Assignment, patternMap: PatternMap): Boolean {
         val filteredPattern = patternMap[pattern]?.filterBy(filter, filterDep?.let { assignment[it] }) ?: return true
@@ -33,7 +33,7 @@ data class ForallFormula(
                 val revertSuite = subFormula.repairF2T(bind(assignment, variable, it), patternMap, lk)
                 removalSuite or revertSuite
             }.fold(RepairSuite()) { acc, suite -> acc and suite }
-        return repairSuite.filterImmutable(userConfig, manager)
+        return repairSuite.filterImmutable(userConfig?.items, manager)
     }
 
     override fun repairT2F(assignment: Assignment, patternMap: PatternMap, lk: Boolean): RepairSuite {
@@ -52,7 +52,7 @@ data class ForallFormula(
         }
 
         val repairSuite = revertSuite or newCtxSuite
-        return repairSuite.filterImmutable(userConfig, manager)
+        return repairSuite.filterImmutable(userConfig?.items, manager)
     }
 
     override fun repairF2TSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
@@ -61,13 +61,15 @@ data class ForallFormula(
         val repairSeqs = filteredPattern.filterNot { subFormula.evaluate(bind(assignment, variable, it), patternMap) }.map {
             val removalSeq = sequenceOf(RepairCase(RemovalRepairAction(it, pattern), weight))
             val revertSeq = subFormula.repairF2TSeq(bind(assignment, variable, it), patternMap, lk)
-//            if (revertSeq.first().isConflicting())
-//                chain(removalSeq, revertSeq)
-            chain(revertSeq, removalSeq)
+//          user config
+            if (userConfig?.prefer == PREFER_BRANCH)
+                chain(removalSeq, removalSeq)
+            else
+                chain(revertSeq, removalSeq)
         }
         val results = cartesianProduct(repairSeqs)
 
-        return filterImmutable(userConfig, manager, results)
+        return results.filterByConfig(userConfig, manager)
     }
 
     override fun repairT2FSeq(assignment: Assignment, patternMap: PatternMap, lk: Boolean): Sequence<RepairCase> {
@@ -82,8 +84,12 @@ data class ForallFormula(
             false -> addSeq
         }
 
-        val repairSeq = chain(chain(revertSeq), newCtxSeq)
-        return filterImmutable(userConfig, manager, repairSeq)
+        val repairSeq =
+            when (userConfig?.prefer) {
+                PREFER_BRANCH -> chain(newCtxSeq, chain(revertSeq))
+                else -> chain(chain(revertSeq), newCtxSeq)
+            }
+        return repairSeq.filterByConfig(userConfig, manager)
     }
 
     override fun initVerifyNode(
@@ -159,7 +165,7 @@ data class ForallFormula(
                 RemovalRepairAction(it.assignment.getValue(variable), pattern), weight
             )
         }.fold(RepairSuite()) { acc, suite -> acc and suite }
-        return result.filterImmutable(userConfig, manager)
+        return result.filterImmutable(userConfig?.items, manager)
     }
 
     override fun repairNodeT2F(rctNode: RCTNode, lk: Boolean): RepairSuite {
@@ -169,7 +175,7 @@ data class ForallFormula(
         }.fold(RepairSuite()) { acc, suite -> acc or suite } or
                 // Add the default context to the pattern
                 repairByDefaultContext(rctNode, lk)
-        return repairSuite.filterImmutable(userConfig, manager)
+        return repairSuite.filterImmutable(userConfig?.items, manager)
     }
 
     private fun repairByDefaultContext(rctNode: RCTNode, lk: Boolean): RepairSuite {
@@ -246,7 +252,7 @@ fun fromCCFormulaForall(fml: FForall, manager: ContextManager?, registry: BFuncR
     fml.filter,
     fml.filterDep,
     manager,
-    fml.disableConfigItems
+    fml.repairConfig
 )
 
 fun quantifierCreateRCTBranches(

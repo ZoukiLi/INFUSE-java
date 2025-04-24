@@ -1,9 +1,8 @@
 package com.constraint.resolution
 
 import com.CC.Contexts.ContextChange
-import com.constraint.resolution.formulas.BFuncFormula
-import com.CC.Contexts.Context as CCContext
 import io.github.oshai.kotlinlogging.KotlinLogging
+import com.CC.Contexts.Context as CCContext
 
 private val logger = KotlinLogging.logger {}
 
@@ -24,10 +23,13 @@ data class RepairConfig(
     val maxAddition: Int,
     val maxUpdate: Int,
     val maxRemoval: Int,
-    val prefer: String,
+    val prefer: String?,
     val maxCaseSize: Int,
     val maxSuiteSize: Int,
 )
+
+const val PREFER_BRANCH = "branch"
+const val PREFER_REVERT = "revert"
 
 interface RepairAction {
     fun repairType(): RepairType
@@ -40,6 +42,7 @@ interface RepairAction {
     fun equal(other: RepairAction): Boolean
     fun conflict(other: RepairAction): Boolean
     fun varEnv(): Map<Variable, CCContext>
+    fun affectContexts(): Set<Context> = setOf()
 }
 
 data class AdditionRepairAction(val context: Context, val patternName: String) : RepairAction {
@@ -72,6 +75,8 @@ data class AdditionRepairAction(val context: Context, val patternName: String) :
     override fun varEnv(): Map<Variable, CCContext> {
         return context.ccContext?.let { mapOf("var" to it) } ?: emptyMap()
     }
+
+    override fun affectContexts(): Set<Context> = setOf(context)
 }
 
 data class RemovalRepairAction(val context: Context, val patternName: String) : RepairAction {
@@ -103,6 +108,8 @@ data class RemovalRepairAction(val context: Context, val patternName: String) : 
     override fun varEnv(): Map<Variable, CCContext> {
         return context.ccContext?.let { mapOf("var" to it) } ?: emptyMap()
     }
+
+    override fun affectContexts(): Set<Context> = setOf(context)
 }
 
 data class EqualizationRepairAction(
@@ -154,6 +161,8 @@ data class EqualizationRepairAction(
         context2.ccContext?.let { env["var2"] = it }
         return env
     }
+
+    override fun affectContexts(): Set<Context> = setOf(context1, context2)
 }
 
 data class EqualizationConstRepairAction(
@@ -193,6 +202,8 @@ data class EqualizationConstRepairAction(
     override fun varEnv(): Map<Variable, CCContext> {
         return context1.ccContext?.let { mapOf("var1" to it) } ?: emptyMap()
     }
+
+    override fun affectContexts(): Set<Context> = setOf(context1)
 }
 
 data class DifferentiationRepairAction(
@@ -244,6 +255,8 @@ data class DifferentiationRepairAction(
         context2.ccContext?.let { env["var2"] = it }
         return env
     }
+
+    override fun affectContexts(): Set<Context> = setOf(context1, context2)
 }
 
 data class DifferentiationConstRepairAction(
@@ -283,6 +296,8 @@ data class DifferentiationConstRepairAction(
     override fun varEnv(): Map<Variable, CCContext> {
         return context1.ccContext?.let { mapOf("var1" to it) } ?: emptyMap()
     }
+
+    override fun affectContexts(): Set<Context> = setOf(context1)
 }
 
 
@@ -327,13 +342,17 @@ data class BfuncRepairAction(
     override fun applyTo(manager: ContextManager) = listOf<ContextChange>()
     override fun affectedBy(userConfig: RepairDisableConfigItem, manager: ContextManager) =
         userConfig.repairType == repairType() && manager.patternsOf(context).contains(userConfig.patternName)
+
     override fun inPattern(patternName: String, manager: ContextManager) = false
     override fun equal(other: RepairAction): Boolean = false
     override fun conflict(other: RepairAction): Boolean = false
     override fun varEnv(): Map<Variable, CCContext> {
         return context.ccContext?.let { mapOf("var" to it) } ?: emptyMap()
     }
+
     var value: String = ""
+
+    override fun affectContexts(): Set<Context> = setOf(context)
 }
 
 typealias Attribute = Pair<Context, String>
@@ -436,6 +455,8 @@ data class RepairCase(val actions: Set<RepairAction>, val weight: Double) {
     }
 
     constructor(action: RepairAction, weight: Double) : this(setOf(action), weight)
+
+    fun earliestId() = actions.minOf { it.affectContexts().minOf { context -> context.id } }
 }
 
 /**
@@ -445,7 +466,7 @@ data class RepairSuite(
     val cases: Set<RepairCase> = setOf()
 ) {
     constructor(action: RepairAction, weight: Double) : this(setOf(RepairCase(action, weight)))
-    
+
     fun display(): String =
         cases.mapIndexed { index, case -> "Case $index.\n${case.display()}" }.joinToString("\n----------\n")
 
@@ -524,6 +545,22 @@ fun cartesianProduct(vararg cases: Sequence<RepairCase>): Sequence<RepairCase> =
 
 fun cartesianProduct(caseSeqs: Sequence<Sequence<RepairCase>>) =
     cartesianProduct(*caseSeqs.toList().toTypedArray())
+
+fun Sequence<RepairCase>.filterByConfig(
+    userConfig: RepairConfig?,
+    manager: ContextManager?
+): Sequence<RepairCase> =
+    when {
+        userConfig == null || manager == null -> this
+        else -> filter { repairCase ->
+            repairCase.actions.none { action ->
+                userConfig.items.any { pattern -> action.affectedBy(pattern, manager) }
+            } && repairCase.actions.size <= userConfig.maxCaseSize
+                    && repairCase.actions.count { it.repairType() == RepairType.ADDITION } <= userConfig.maxAddition
+                    && repairCase.actions.count { it.repairType() == RepairType.REMOVAL } <= userConfig.maxRemoval
+                    && repairCase.actions.count { it.repairType() == RepairType.UPDATE } <= userConfig.maxUpdate
+        }.take(userConfig.maxSuiteSize)
+    }
 
 fun filterImmutable(
     userConfig: List<RepairDisableConfigItem>?,
@@ -619,40 +656,40 @@ fun runPyCode(pyCode: String, pythonPath: String = "python"): String {
         prefix = "z3_script_",
         suffix = ".py"
     ).toFile()
-    
+
     try {
         // 写入Python代码到临时文件
         tempFile.writeText(pyCode)
-        
+
         val processBuilder = ProcessBuilder(pythonPath, tempFile.absolutePath)
-        
+
         // 配置环境变量
         val env = processBuilder.environment()
         logger.info { "env: $env" }
         env.remove("PYTHONHOME")
         env["PYTHONUNBUFFERED"] = "1"
-        
+
         // 配置错误输出合并到标准输出
         processBuilder.redirectErrorStream(true)
-        
+
         return try {
             val process = processBuilder.start()
-            
+
             // 读取输出
             val output = process.inputStream.bufferedReader().use { it.readText() }
-            
+
             // 等待进程完成
             val exitCode = process.waitFor()
             if (exitCode != 0) {
                 logger.error { "Python process exited with code $exitCode\nOutput: $output" }
             }
-            
+
             output
         } catch (e: Exception) {
             logger.error { "Failed to run Python code: ${e.message}" }
             ""
         }
-        
+
     } finally {
         // 清理临时文件
         try {
@@ -678,7 +715,7 @@ fun runPyCodeWithEnv(pyCode: String, envName: String): String {
             "conda run -n $condaEnv python"
         )
     }
-    
+
     // 对于virtualenv环境
     val pythonPath = when {
         // Windows
@@ -688,6 +725,6 @@ fun runPyCodeWithEnv(pyCode: String, envName: String): String {
         else ->
             "$envName/bin/python"
     }
-    
+
     return runPyCode(pyCode, pythonPath)
 }
